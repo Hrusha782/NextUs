@@ -1,0 +1,52 @@
+// Example NextUs DSL program - Simple Counter App
+
+state {
+    count: 0
+}
+
+view {
+    Column {
+        spacing: 10
+
+        Text {
+            content: "Counter Example"
+        }
+
+        Text {
+            content: count
+        }
+
+        Row {
+            spacing: 10
+
+            Button {
+                id: "decrement"
+                text: "-"
+            }
+
+            Button {
+                id: "increment"
+                text: "+"
+            }
+
+            Button {
+                id: "reset"
+                text: "Reset"
+            }
+        }
+    }
+}
+
+update {
+    when Clicked { id: "increment" } => {
+        count: count + 1
+    }
+
+    when Clicked { id: "decrement" } => {
+        count: count - 1
+    }
+
+    when Clicked { id: "reset" } => {
+        count: 0
+    }
+}

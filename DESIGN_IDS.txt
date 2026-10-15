@@ -1,0 +1,291 @@
+══════════════════════════════════════════════════════════════════════════════
+  NextUs App — Design ID Reference
+  Every `id:` you place on an element in your .nxt file maps to a behaviour
+  inside the App.  IDs fall into three categories:
+
+    SLOT   — the element is entirely replaced with live backend data
+    LABEL  — the element's text is updated with live data
+    ACTION — a click handler is attached to the element
+
+  Syntax in your .nxt file:
+    Button { id: "send"  text: "Send"  variant: Primary }
+    Label  { id: "my-name"  text: "Me" }
+
+  Any element type works (Button, Label, Text, Avatar, …).  The App finds
+  elements by their compiled  data-nxt-id="..."  HTML attribute.
+══════════════════════════════════════════════════════════════════════════════
+
+
+────────────────────────────────────────────────────────────────────────────
+  SLOTS  (element is replaced with live-generated DOM)
+────────────────────────────────────────────────────────────────────────────
+
+  slot-chat-list
+      Replaced with one button per chat that the logged-in user belongs to.
+      Each button carries  data-nxt-id="chat-<chatId>"  so clicking it opens
+      that chat in the messenger view.
+      Example:  Button { id: "slot-chat-list"  text: "Loading chats…" }
+
+  slot-messages
+      Replaced with message bubbles for the currently open chat.
+      Sent messages get class  nxt-bubble sent,  received get  nxt-bubble received.
+      Each bubble contains sender name, message content, and timestamp.
+      Example:  Button { id: "slot-messages"  text: "Select a chat." }
+
+
+────────────────────────────────────────────────────────────────────────────
+  LABELS  (element text is set to live data)
+────────────────────────────────────────────────────────────────────────────
+
+  my-name
+      Set to the logged-in user's current nickname.
+      Example:  Button { id: "my-name"  text: "Me"  variant: "Ghost" }
+
+  chat-header-name
+      Set to the name of the currently open chat (or "Select a chat" when none
+      is open).
+      Example:  Button { id: "chat-header-name"  text: "…"  variant: "Ghost" }
+
+
+────────────────────────────────────────────────────────────────────────────
+  ACTIONS — Messaging
+────────────────────────────────────────────────────────────────────────────
+
+  send
+      Sends the message typed in the nearest .nxt-input field to the open chat.
+      Also triggered by pressing Enter inside the input field.
+      Example:  Button { id: "send"  text: "Send"  variant: Primary }
+
+  new-chat
+      Switches to the terminal and pre-fills  "chat create "  in the command
+      input so the user can type member IDs immediately.
+      Example:  Button { id: "new-chat"  text: "✏"  variant: "Ghost" }
+
+
+────────────────────────────────────────────────────────────────────────────
+  ACTIONS — Message context menu
+────────────────────────────────────────────────────────────────────────────
+
+  msg-ctx-delete-me
+      Deletes the right-clicked message only for the current user.
+      Shown in the context menu popup; JS populates a data-nxt-msg-id attribute
+      on this button with the target message ID before showing the menu.
+      Only visible when myMessages is false (any bubble can be right-clicked);
+      JS should hide/dim this for messages the user cannot delete on their end.
+      Example:  Button { id: "msg-ctx-delete-me"  text: "🗑  Delete for me"  variant: "Ghost" }
+
+  msg-ctx-delete-all
+      Deletes the right-clicked message for all participants in the chat.
+      Only active for messages sent by the current user (JS enforces this).
+      JS sets data-nxt-msg-id before showing the menu.
+      Example:  Button { id: "msg-ctx-delete-all"  text: "🗑  Delete for everyone"  variant: "Ghost" }
+
+  msg-ctx-edit
+      Begins editing the right-clicked message: copies its current text into
+      the msg-input field and sets the app into edit-mode so pressing Send
+      updates the existing message rather than creating a new one.
+      Only active for messages sent by the current user (JS enforces this).
+      Example:  Button { id: "msg-ctx-edit"  text: "✏  Edit message"  variant: "Ghost" }
+
+  NOTE — context menu panel
+      The three buttons above live inside a Column element that JS treats as
+      the floating popup panel.  JS locates the panel as:
+        document.querySelector('[data-nxt-id="msg-ctx-delete-me"]').parentElement
+      On first render JS hides this column (display:none).  On right-click over
+      any .nxt-bubble it positions the column at the cursor (position:fixed) and
+      makes it visible.  Clicking outside or choosing an option hides it again.
+
+
+────────────────────────────────────────────────────────────────────────────
+  ACTIONS — Session
+────────────────────────────────────────────────────────────────────────────
+
+  logout
+      Logs the current user out and clears all session state.
+      What happens next is entirely up to your design — use data-nxt-navigate
+      on the logout button to go to a login page, or combine with any other
+      action ID to define the post-logout flow.  No automatic navigation occurs.
+      Example:  Button { id: "logout"  text: "⏻"  variant: "Ghost" }
+
+  checkpass
+      Opens a native prompt asking the user to enter their password, then
+      shows whether it is correct.
+      Example:  Button { id: "checkpass"  text: "🔑"  variant: "Ghost" }
+
+  whoami
+      Switches to the terminal and prints the logged-in user's nickname and
+      internal user ID.
+      Equivalent terminal command:  whoami
+      Example:  Button { id: "whoami"  text: "Who am I?" }
+
+  nick
+      Switches to the terminal and pre-fills  "nick "  so the user can type
+      a new nickname.
+      Equivalent terminal command:  nick <new_nickname>
+      Example:  Button { id: "nick"  text: "Change name" }
+
+
+────────────────────────────────────────────────────────────────────────────
+  ACTIONS — Navigation / Views
+────────────────────────────────────────────────────────────────────────────
+
+  terminal
+      Closes the App window and launches the NextUs Terminal application.
+      Example:  Button { id: "terminal"  text: "⌨"  variant: "Ghost" }
+
+  messenger
+      Switches to the messenger view (only when logged in).
+      Example:  Button { id: "messenger"  text: "💬" }
+
+  code
+      Launches the NextUs IDE application.
+      Equivalent terminal command:  code
+      Example:  Button { id: "code"  text: "Open IDE" }
+
+  start
+      Launches another instance of the NextUs App.
+      Equivalent terminal command:  start
+      Example:  Button { id: "start"  text: "Launch App" }
+
+  help
+      Switches to the terminal and prints the full command reference.
+      Equivalent terminal command:  help
+      Example:  Button { id: "help"  text: "?" }
+
+  clear
+      Clears all output in the terminal (does not switch to terminal view).
+      Equivalent terminal command:  clear
+      Example:  Button { id: "clear"  text: "Clear" }
+
+
+────────────────────────────────────────────────────────────────────────────
+  ACTIONS — Friends
+────────────────────────────────────────────────────────────────────────────
+
+  friend-list
+      Switches to the terminal and prints your full friends list with IDs.
+      Equivalent terminal command:  friend list
+      Example:  Button { id: "friend-list"  text: "Friends" }
+
+  friend-id
+      Switches to the terminal and prints your own shareable friend/user ID.
+      Equivalent terminal command:  friend id
+      Example:  Button { id: "friend-id"  text: "My ID" }
+
+  friend-add
+      Switches to the terminal and pre-fills  "friend add "  so the user can
+      paste an ID.
+      Equivalent terminal command:  friend add <user_id>
+      Example:  Button { id: "friend-add"  text: "Add friend" }
+
+  friend-remove
+      Switches to the terminal and pre-fills  "friend remove "  so the user
+      can paste an ID.
+      Equivalent terminal command:  friend remove <user_id>
+      Example:  Button { id: "friend-remove"  text: "Remove friend" }
+
+
+────────────────────────────────────────────────────────────────────────────
+  ACTIONS — Chats
+────────────────────────────────────────────────────────────────────────────
+
+  chat-list
+      Switches to the terminal and prints all chats with IDs, names, and
+      unread counts.
+      Equivalent terminal command:  chat list
+      Example:  Button { id: "chat-list"  text: "All chats" }
+
+  chat-leave
+      Switches to the terminal and pre-fills  "chat leave "  so the user can
+      type/paste a chat ID.
+      Equivalent terminal command:  chat leave <chat_id>
+      Example:  Button { id: "chat-leave"  text: "Leave chat" }
+
+  unread
+      Switches to the terminal and prints all chats that have unread messages.
+      Equivalent terminal command:  unread
+      Example:  Button { id: "unread"  text: "Unread" }
+
+
+────────────────────────────────────────────────────────────────────────────
+  ACTIONS — Blocks
+────────────────────────────────────────────────────────────────────────────
+
+  blocked-list
+      Switches to the terminal and prints the list of blocked users.
+      Equivalent terminal command:  blocked list
+      Example:  Button { id: "blocked-list"  text: "Blocked users" }
+
+  block
+      Switches to the terminal and pre-fills  "block "  so the user can
+      type/paste a user ID.
+      Equivalent terminal command:  block <user_id>
+      Example:  Button { id: "block"  text: "Block user" }
+
+  unblock
+      Switches to the terminal and pre-fills  "unblock "  so the user can
+      type/paste a user ID.
+      Equivalent terminal command:  unblock <user_id>
+      Example:  Button { id: "unblock"  text: "Unblock user" }
+
+
+────────────────────────────────────────────────────────────────────────────
+  DYNAMIC IDs  (generated at runtime — do not hardcode in .nxt files)
+────────────────────────────────────────────────────────────────────────────
+
+  chat-<chatId>
+      Auto-generated for every entry inside  slot-chat-list.
+      Clicking any of these opens that specific chat in the messenger.
+      You do not place this in your .nxt file — it is created by the App
+      when it replaces the  slot-chat-list  element.
+
+
+────────────────────────────────────────────────────────────────────────────
+  NOTES
+────────────────────────────────────────────────────────────────────────────
+
+  • IDs that require authentication (whoami, friend-*, chat-*, unread, …) are
+    silently ignored when no user is logged in because the handler checks
+    session state before acting.
+
+  • "Pre-fill" actions switch to the terminal AND focus the command input so
+    the user can complete the command by typing the argument and pressing Enter.
+
+  • You can freely mix Slots, Labels, and Action IDs in the same .nxt file.
+    The App processes all of them every time  renderMessenger()  is called.
+
+  • Unrecognised IDs are simply ignored — no error is produced.
+
+────────────────────────────────────────────────────────────────────────────
+  focusAfter PROPERTY  (focus control — works on any element)
+────────────────────────────────────────────────────────────────────────────
+
+  Add  focusAfter: "target-id"  to any element to tell the App which element
+  should receive keyboard focus after that element is interacted with.
+
+  How it works:
+    • When the user clicks an element that has  focusAfter,  the target id is
+      queued.  After the next render completes, the App calls .focus() on the
+      element with that id.
+    • For Input elements, pressing Enter also triggers the focus.
+    • Only applies to user-triggered renders (send, chat open, messenger load).
+      Background refresh never steals focus.
+    • If nothing carries  focusAfter,  no automatic focus is applied.
+
+  Common patterns:
+
+    Keep cursor in the message box after clicking Send:
+      Button { id: "send"  text: "Send"  variant: "Primary"  focusAfter: "msg-input" }
+
+    Keep cursor in the message box after pressing Enter:
+      Input { id: "msg-input"  placeholder: "Write a message…"  focusAfter: "msg-input" }
+
+    Move focus to the message box when opening a chat:
+      Button { id: "slot-chat-list"  focusAfter: "msg-input"  text: "Loading…" }
+      -- All generated chat buttons inherit this, so clicking any chat focuses
+      -- the message input automatically.
+
+  No two elements need to carry focusAfter for the same action — only the
+  element the user actually clicks determines the focus outcome.
+
+══════════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,51 @@
+// Example NextUs DSL program - Simple Messenger UI
+
+state {
+    input_text: ""
+}
+
+view {
+    Column {
+        spacing: 8
+        
+        // Header
+        Row {
+            Text { content: "NextUs Messenger" }
+        }
+        
+        // Message area
+        Scroll {
+            direction: "Vertical"
+            
+            Column {
+                spacing: 4
+                
+                Text { content: "Welcome to NextUs!" }
+                Text { content: "This is a simple messenger example." }
+            }
+        }
+        
+        // Input area
+        Row {
+            spacing: 8
+            
+            Input {
+                placeholder: "Type a message..."
+            }
+            
+            Button {
+                text: "Send"
+            }
+        }
+    }
+}
+
+update {
+    when Clicked { id: "send" } => {
+        input_text: ""
+    }
+    
+    when InputChanged { id: "message_input", value: text } => {
+        input_text: text
+    }
+}
