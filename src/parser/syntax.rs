@@ -173,12 +173,64 @@ pub fn format_expr(expr: &Expr) -> String {
     }
 }
 
+/// Walk an expression tree and reject any element the runtime cannot build.
+///
+/// Without this, a typo or a non-programmable name like `TopBar` passes
+/// `--check` and only fails later at render time.
+fn validate_elements(expr: &Expr) -> Result<(), String> {
+    match expr {
+        Expr::Element { element_type, properties, children } => {
+            if !crate::element::is_known_element(element_type) {
+                return Err(format!(
+                    "Unknown element '{}'. It is not a NextUs primitive.",
+                    element_type
+                ));
+            }
+            for (_, value) in properties {
+                validate_elements(value)?;
+            }
+            for child in children {
+                validate_elements(child)?;
+            }
+            Ok(())
+        }
+        Expr::List(items) => items.iter().try_for_each(validate_elements),
+        Expr::Object(fields) => fields.iter().try_for_each(|(_, v)| validate_elements(v)),
+        Expr::BinaryOp { left, right, .. } => {
+            validate_elements(left)?;
+            validate_elements(right)
+        }
+        Expr::UnaryOp { operand, .. } => validate_elements(operand),
+        Expr::If { condition, then_branch, else_branch } => {
+            validate_elements(condition)?;
+            validate_elements(then_branch)?;
+            match else_branch {
+                Some(e) => validate_elements(e),
+                None => Ok(()),
+            }
+        }
+        Expr::FunctionCall { args, .. } => args.iter().try_for_each(validate_elements),
+        Expr::MethodCall { object, args, .. } => {
+            validate_elements(object)?;
+            args.iter().try_for_each(validate_elements)
+        }
+        Expr::Lambda { body, .. } => validate_elements(body),
+        Expr::PropertyAccess { object, .. } => validate_elements(object),
+        Expr::String(_) | Expr::Number(_) | Expr::Boolean(_) | Expr::Null | Expr::Variable(_) => {
+            Ok(())
+        }
+    }
+}
+
 pub fn validate_program(program: &Program) -> Result<(), String> {
     if matches!(program.view.body, Expr::Null) {
         return Err("View block is required".to_string());
     }
 
+    validate_elements(&program.view.body)?;
+
     for state_var in &program.state {
+        validate_elements(&state_var.initial_value)?;
         if !is_pure_expr(&state_var.initial_value) {
             return Err(format!(
                 "State variable '{}' must have a pure initial value",
@@ -191,7 +243,8 @@ pub fn validate_program(program: &Program) -> Result<(), String> {
     let state_names: Vec<String> = program.state.iter().map(|s| s.name.clone()).collect();
     
     for rule in &program.update {
-        for (var_name, _) in &rule.state_update {
+        for (var_name, update_expr) in &rule.state_update {
+            validate_elements(update_expr)?;
             if !state_names.contains(var_name) {
                 return Err(format!(
                     "Update rule references undefined state variable: {}",
