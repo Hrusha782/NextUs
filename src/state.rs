@@ -13,7 +13,32 @@ pub enum Value {
     Lambda { params: Vec<String>, body: Box<Expr> },
 }
 
+/// Deterministic text form of a number: whole values render without a
+/// trailing `.0`, everything else uses Rust's shortest round-trip form.
+/// Values outside the f64 exact-integer range keep the float form so the
+/// `as i64` cast can never saturate.
+pub fn format_number(n: f64) -> String {
+    const MAX_EXACT_INT: f64 = 9_007_199_254_740_992.0; // 2^53
+    if n.fract() == 0.0 && n.is_finite() && n.abs() <= MAX_EXACT_INT {
+        format!("{}", n as i64)
+    } else {
+        format!("{}", n)
+    }
+}
+
 impl Value {
+    /// Text form used both for rendering scalars into primitives and for
+    /// string concatenation, so the two can never disagree.
+    /// Returns `None` for values that have no meaningful text form.
+    pub fn to_display_string(&self) -> Option<String> {
+        match self {
+            Value::String(s) => Some(s.clone()),
+            Value::Number(n) => Some(format_number(*n)),
+            Value::Boolean(b) => Some(b.to_string()),
+            _ => None,
+        }
+    }
+
     pub fn as_string(&self) -> Option<&str> {
         if let Value::String(s) = self {
             Some(s)

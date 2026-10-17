@@ -163,7 +163,7 @@ impl Runtime {
             Expr::BinaryOp { left, op, right } => {
                 let left_val = Self::eval_expr_static(left, state, limits, depth + 1)?;
                 let right_val = Self::eval_expr_static(right, state, limits, depth + 1)?;
-                Self::apply_binary_op(&left_val, *op, &right_val)
+                Self::apply_binary_op(&left_val, *op, &right_val, limits)
             }
 
             Expr::UnaryOp { op, operand } => {
@@ -241,7 +241,20 @@ impl Runtime {
         }
     }
 
-    fn apply_binary_op(left: &Value, op: BinaryOperator, right: &Value) -> Result<Value, RuntimeError> {
+    fn apply_binary_op(
+        left: &Value,
+        op: BinaryOperator,
+        right: &Value,
+        limits: &RuntimeLimits,
+    ) -> Result<Value, RuntimeError> {
+        // `+` on a string concatenates, so `"Count: " + count` works as documented.
+        // Numbers are matched first below, so arithmetic is unaffected.
+        if matches!(op, BinaryOperator::Add | BinaryOperator::Concat)
+            && (matches!(left, Value::String(_)) || matches!(right, Value::String(_)))
+        {
+            return Self::concat_values(left, right, limits);
+        }
+
         match (left, op, right) {
             (Value::Number(l), BinaryOperator::Add, Value::Number(r)) => Ok(Value::Number(l + r)),
             (Value::Number(l), BinaryOperator::Subtract, Value::Number(r)) => Ok(Value::Number(l - r)),
@@ -253,13 +266,89 @@ impl Runtime {
                     Ok(Value::Number(l / r))
                 }
             }
-            (Value::String(l), BinaryOperator::Concat, Value::String(r)) => {
-                Ok(Value::String(format!("{}{}", l, r)))
+            (Value::Number(l), BinaryOperator::Modulo, Value::Number(r)) => {
+                if *r == 0.0 {
+                    Err(RuntimeError::DivisionByZero)
+                } else {
+                    Ok(Value::Number(l % r))
+                }
             }
             (Value::Boolean(l), BinaryOperator::And, Value::Boolean(r)) => Ok(Value::Boolean(*l && *r)),
             (Value::Boolean(l), BinaryOperator::Or, Value::Boolean(r)) => Ok(Value::Boolean(*l || *r)),
+
+            // Equality works on any two values of the same shape.
+            (_, BinaryOperator::Equal, _) => Ok(Value::Boolean(left == right)),
+            (_, BinaryOperator::NotEqual, _) => Ok(Value::Boolean(left != right)),
+
+            // Ordering is defined for numbers and, lexicographically, for strings.
+            // A NaN operand makes every comparison false, as in IEEE 754, rather
+            // than raising: that keeps `render` total without hiding a type error.
+            (_, BinaryOperator::LessThan, _)
+            | (_, BinaryOperator::LessOrEqual, _)
+            | (_, BinaryOperator::GreaterThan, _)
+            | (_, BinaryOperator::GreaterOrEqual, _) => {
+                let ordering = match (left, right) {
+                    (Value::Number(l), Value::Number(r)) => l.partial_cmp(r),
+                    (Value::String(l), Value::String(r)) => Some(l.cmp(r)),
+                    _ => {
+                        return Err(RuntimeError::InvalidOperation(format!(
+                            "Cannot compare {:?} and {:?}: ordering is defined for two numbers or two strings",
+                            left, right
+                        )))
+                    }
+                };
+
+                let Some(ordering) = ordering else {
+                    return Ok(Value::Boolean(false));
+                };
+
+                use std::cmp::Ordering;
+                match op {
+                    BinaryOperator::LessThan => Ok(Value::Boolean(ordering == Ordering::Less)),
+                    BinaryOperator::LessOrEqual => {
+                        Ok(Value::Boolean(ordering != Ordering::Greater))
+                    }
+                    BinaryOperator::GreaterThan => {
+                        Ok(Value::Boolean(ordering == Ordering::Greater))
+                    }
+                    BinaryOperator::GreaterOrEqual => {
+                        Ok(Value::Boolean(ordering != Ordering::Less))
+                    }
+                    // The outer arm admits only the four above; stay an Err
+                    // rather than a panic if that ever changes.
+                    _ => Err(RuntimeError::InvalidOperation(format!(
+                        "Cannot apply {:?} to {:?} and {:?}",
+                        op, left, right
+                    ))),
+                }
+            }
+
             _ => Err(RuntimeError::InvalidOperation(format!("Cannot apply {:?} to {:?} and {:?}", op, left, right))),
         }
+    }
+
+    /// Concatenate a string with another scalar. The result is bounded by
+    /// `max_text_length` so a program cannot grow text without limit.
+    fn concat_values(
+        left: &Value,
+        right: &Value,
+        limits: &RuntimeLimits,
+    ) -> Result<Value, RuntimeError> {
+        let (l, r) = match (left.to_display_string(), right.to_display_string()) {
+            (Some(l), Some(r)) => (l, r),
+            _ => {
+                return Err(RuntimeError::InvalidOperation(format!(
+                    "Cannot concatenate {:?} and {:?}: only strings, numbers and booleans have a text form",
+                    left, right
+                )))
+            }
+        };
+
+        limits
+            .validate_text_length(l.len() + r.len())
+            .map_err(RuntimeError::LimitExceeded)?;
+
+        Ok(Value::String(format!("{}{}", l, r)))
     }
 
     fn apply_unary_op(op: UnaryOperator, operand: &Value) -> Result<Value, RuntimeError> {
@@ -297,12 +386,7 @@ impl Runtime {
         // Helper to get property values
         let get_string = |key: &str, default: &str| -> String {
             props.get(key)
-                .and_then(|v| match v {
-                    Value::String(s) => Some(s.clone()),
-                    Value::Number(n) => Some(if n.fract() == 0.0 { format!("{}", *n as i64) } else { format!("{}", n) }),
-                    Value::Boolean(b) => Some(b.to_string()),
-                    _ => None,
-                })
+                .and_then(|v| v.to_display_string())
                 .unwrap_or_else(|| default.to_string())
         };
 
