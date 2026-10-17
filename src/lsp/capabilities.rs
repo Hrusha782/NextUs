@@ -260,6 +260,95 @@ pub static ELEMENT_INFO: &[ElementInfo] = &[
         ],
         can_have_children: true,
     },
+
+    // Messenger primitives
+    ElementInfo {
+        name: "Container",
+        description: "A generic box wrapping its children. Note: the runtime currently reads no properties on Container — size, padding and background are fixed defaults.",
+        properties: &[],
+        can_have_children: true,
+    },
+    ElementInfo {
+        name: "MessageList",
+        description: "A scrolling list of chat messages with grouping and auto-scroll.",
+        properties: &[
+            PropertyInfo { name: "spacing", typ: "number", description: "Space between messages", default: Some("0") },
+            PropertyInfo { name: "group_spacing", typ: "number", description: "Extra space between message groups", default: Some("0") },
+            PropertyInfo { name: "show_timestamps", typ: "boolean", description: "Show a timestamp per message", default: Some("false") },
+            PropertyInfo { name: "auto_scroll", typ: "boolean", description: "Scroll to newest message on new content", default: Some("false") },
+            PropertyInfo { name: "reverse_order", typ: "boolean", description: "Render newest message first", default: Some("false") },
+            PropertyInfo { name: "scroll_threshold", typ: "number", description: "Distance from bottom that still counts as \"at bottom\"", default: Some("0") },
+        ],
+        can_have_children: true,
+    },
+    ElementInfo {
+        name: "MessageBubble",
+        description: "A single chat message bubble.",
+        properties: &[
+            PropertyInfo { name: "type", typ: "string", description: "\"Sent\", \"Received\" or \"System\"", default: Some("\"Received\"") },
+            PropertyInfo { name: "max_width", typ: "number", description: "Maximum bubble width in pixels", default: Some("0") },
+            PropertyInfo { name: "show_tail", typ: "boolean", description: "Draw the pointer tail", default: Some("false") },
+            PropertyInfo { name: "tail_size", typ: "number", description: "Tail size in pixels", default: Some("0") },
+            PropertyInfo { name: "shadow", typ: "boolean", description: "Drop shadow behind the bubble", default: Some("false") },
+        ],
+        can_have_children: true,
+    },
+    ElementInfo {
+        name: "Reaction",
+        description: "Emoji reactions attached to a message.",
+        properties: &[
+            PropertyInfo { name: "size", typ: "number", description: "Emoji size in pixels", default: Some("0") },
+            PropertyInfo { name: "spacing", typ: "number", description: "Space between reactions", default: Some("0") },
+            PropertyInfo { name: "show_count", typ: "boolean", description: "Show the per-emoji count", default: Some("false") },
+            PropertyInfo { name: "max_display", typ: "number", description: "Maximum reactions shown before collapsing", default: Some("0") },
+        ],
+        can_have_children: false,
+    },
+    ElementInfo {
+        name: "Reply",
+        description: "A quoted preview of the message being replied to.",
+        properties: &[
+            PropertyInfo { name: "original_sender", typ: "string", description: "Nickname of the quoted author", default: Some("\"\"") },
+            PropertyInfo { name: "original_text", typ: "string", description: "Text of the quoted message", default: Some("\"\"") },
+            PropertyInfo { name: "max_preview_length", typ: "number", description: "Truncate the preview past this many characters", default: Some("0") },
+            PropertyInfo { name: "show_icon", typ: "boolean", description: "Show the reply icon", default: Some("false") },
+        ],
+        can_have_children: false,
+    },
+    ElementInfo {
+        name: "Attachment",
+        description: "A file attached to a message.",
+        properties: &[
+            PropertyInfo { name: "file_name", typ: "string", description: "Display name of the file", default: Some("\"\"") },
+            PropertyInfo { name: "file_type", typ: "string", description: "\"Image\", \"Video\", \"Audio\", \"Document\" or \"Other\"", default: Some("\"Other\"") },
+            PropertyInfo { name: "file_size", typ: "number", description: "Size in bytes", default: Some("0") },
+            PropertyInfo { name: "show_preview", typ: "boolean", description: "Render an inline preview", default: Some("false") },
+            PropertyInfo { name: "show_download", typ: "boolean", description: "Show the download affordance", default: Some("false") },
+        ],
+        can_have_children: false,
+    },
+    ElementInfo {
+        name: "TypingIndicator",
+        description: "Shows which members are currently typing.",
+        properties: &[
+            PropertyInfo { name: "text", typ: "string", description: "Label template shown beside the dots", default: Some("\"\"") },
+            PropertyInfo { name: "show_avatars", typ: "boolean", description: "Show avatars of typing users", default: Some("false") },
+            PropertyInfo { name: "max_display", typ: "number", description: "Maximum users listed by name", default: Some("0") },
+        ],
+        can_have_children: false,
+    },
+    ElementInfo {
+        name: "SearchBar",
+        description: "A search input with optional scope selector and filters.",
+        properties: &[
+            PropertyInfo { name: "placeholder", typ: "string", description: "Placeholder text", default: Some("\"\"") },
+            PropertyInfo { name: "value", typ: "string", description: "Current query", default: Some("\"\"") },
+            PropertyInfo { name: "show_scope_selector", typ: "boolean", description: "Show the scope dropdown", default: Some("false") },
+            PropertyInfo { name: "show_filters", typ: "boolean", description: "Show the filter controls", default: Some("false") },
+            PropertyInfo { name: "show_results_count", typ: "boolean", description: "Show the result count", default: Some("false") },
+        ],
+        can_have_children: false,
+    },
 ];
 
 /// Get element info by name
