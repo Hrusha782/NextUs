@@ -85,9 +85,8 @@ NextUs/
 │   ├── limits.rs                 # Resource limits
 │   ├── element.rs                # Unified Element enum
 │   ├── error.rs                  # Error types
-│   ├── validator.rs              # Validation logic
-│   ├── context.rs                # Context types
-│   ├── interactions.rs           # Interaction handling
+│   ├── validator.rs              # Limit validation (not called yet)
+│   ├── events.rs                 # Event types
 │   ├── parser/
 │   │   ├── mod.rs               # Parser
 │   │   ├── lexer.rs             # Tokenizer
@@ -104,6 +103,12 @@ NextUs/
 │   │   ├── mod.rs
 │   │   ├── layout_engine.rs     # Layout calculation
 │   │   └── memory_tracker.rs    # Memory tracking
+│   ├── lsp/
+│   │   ├── main.rs              # nextus-lsp server (stdio)
+│   │   ├── capabilities.rs      # ELEMENT_INFO for completion/hover
+│   │   ├── completion.rs
+│   │   ├── diagnostics.rs
+│   │   └── hover.rs
 │   └── tests/
 │
 ├── examples/
@@ -147,7 +152,8 @@ NextUs/
 - ✅ Immutable data structures
 
 ### Safety
-- ✅ Resource limits (depth, memory, time)
+- ✅ Resource limits: depth, text length and list items enforced
+- 🚧 Memory, render time, children, grid cells, tabs and events/s declared but not enforced
 - ✅ No file system access
 - ✅ No network access
 - ✅ No global state
@@ -169,41 +175,42 @@ NextUs/
 
 ## 🚧 Next Steps to Complete
 
-### 1. Element Creation in Runtime
-Implement `create_element()` in [`runtime.rs`](src/runtime.rs) to convert AST elements to actual UI primitives.
+### 1. DOM Output
+`create_element()` in [`runtime.rs`](src/runtime.rs) already turns AST elements
+into typed primitives for all 32 element names in `ELEMENT_NAMES`. What is still
+missing is emitting those primitives as HTML/DOM tagged with `data-nxt-id`,
+which is what the ChatSick shell consumes.
 
-### 2. Renderer Implementation
-Build the actual renderer in [`src/renderer/`](src/renderer/) to display UI:
-- Layout engine (calculate positions/sizes)
-- Graphics backend (wgpu, skia, or similar)
-- Event handling
+There is no GPU or canvas backend and none is planned: output is HTML/DOM, so
+the host app owns painting. [`src/renderer/`](src/renderer/) holds an early
+layout engine and memory tracker, neither of which is on the render path.
 
-### 3. Lambda Support
-Add closure support for `map()`, `filter()`, etc.
+### 2. Lambda Support
+`map()` and `filter()` are stubs that return an error. They need to call a
+lambda during evaluation, which means threading state and limits into the
+builtin signature.
 
-### 4. Style Application
-Implement style rule matching and application.
+### 3. Style Application
+`style` rules parse into `Program::styles`, but nothing matches or applies them
+during render. Note `parse_style_block`/`parse_style_rule` in the parser are a
+second, unused implementation and should be removed or wired in.
 
-### 5. More Built-in Functions
-Add remaining functions: `map`, `filter`, `reduce`, etc.
+### 4. More Built-in Functions
+`concat`, `substring`, `contains` and `now` are documented as absent. `now`
+must stay host-supplied so the runtime remains deterministic.
 
-### 6. Testing
-Write comprehensive tests for:
-- Parser
-- Runtime
-- State management
-- Validators
+### 5. Positions in Errors
+The lexer tracks line and column but drops them when it emits `Vec<Token>`, so
+`ParseError` carries no position and `lsp/diagnostics.rs` recovers one by
+string-scraping the error text. Positioned tokens would fix inline diagnostics.
+
+### 6. Limit Enforcement
+`src/validator.rs` is written but never called. Children per container, grid
+cells, tabs, memory, render time and events/s are unenforced (ChatSick #52).
 
 ### 7. Documentation
-- API documentation
-- Tutorial
-- Cookbook with examples
-
-### 8. CLI Tool
-Create a command-line tool to:
-- Parse .nxt files
-- Run applications
-- Debug (time-travel)
+- Reconcile `DOCS.md` and `DSL_README.md`, which overlap and disagree
+- Tutorial and cookbook
 
 ## 🎓 Language Principles
 
@@ -231,8 +238,11 @@ cargo build
 # Run tests
 cargo test
 
-# Run example (once renderer is complete)
-cargo run --example messenger
+# Parse, validate and render an example once, printing the tree
+cargo run --bin nextus -- examples/messenger.nxt
+
+# Parse and validate only
+cargo run --bin nextus -- --check examples/messenger.nxt
 ```
 
 ## 💡 Example Usage

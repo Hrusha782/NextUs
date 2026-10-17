@@ -33,10 +33,10 @@ NextUs (`.nxt`) is a declarative, pure, domain-specific language for building me
 A `.nxt` file has four top-level sections. Only `view` is strictly required; the others are optional.
 
 ```
-state { ... }    -- initial data
-view  { ... }    -- UI tree (pure function of state)
-update { ... }   -- how messages change state
-style  { ... }   -- visual rules
+state { ... }    // initial data
+view  { ... }    // UI tree (pure function of state)
+update { ... }   // how messages change state
+style  { ... }   // visual rules
 ```
 
 Sections can appear in any order. Comments use `//`.
@@ -73,7 +73,7 @@ Type annotations are optional:
 
 ```nextus
 state {
-    count: 0        -- inferred as Number
+    count: 0        // inferred as Number
 }
 ```
 
@@ -111,6 +111,17 @@ view(state) {
     Text { content: state.name }
 }
 ```
+
+Element names must be NextUs primitives, listed in
+[UI Primitives](#8-ui-primitives). An unknown name is rejected by
+`nextus --check` before the program ever renders:
+
+```
+✗ Validation error: Unknown element 'TopBr'. It is not a NextUs primitive.
+```
+
+The app's top bar and left rail are not primitives and cannot be targeted from
+a design or a build.
 
 ### Nesting Elements
 
@@ -165,7 +176,7 @@ update {
 ```nextus
 update {
     when _ => {
-        -- matches any unhandled event; state unchanged
+        // matches any unhandled event; state unchanged
     }
 }
 ```
@@ -240,8 +251,8 @@ style MessageBubble.Received {
 ### Color Values
 
 ```nextus
-backgroundColor: #ff5500      -- hex
-backgroundColor: white        -- named: white, black, transparent, red, green, blue
+backgroundColor: #ff5500      // hex
+backgroundColor: white        // named: white, black, transparent, red, green, blue
 ```
 
 ---
@@ -268,7 +279,6 @@ count + 1
 price * 1.2
 total - discount
 index % 10
-width // 2         -- integer division
 ```
 
 ### Comparison
@@ -280,26 +290,34 @@ score >= 100
 length < 50
 ```
 
+`==` and `!=` compare any two values. `<`, `<=`, `>` and `>=` are defined for
+two numbers or two strings (strings compare lexicographically); anything else
+raises an error. A `NaN` operand makes every ordering comparison `false`.
+
 ### Logic
 
 ```nextus
 logged_in && has_chats
-not locked
 is_admin || is_moderator
-```
-
-Or written as symbols:
-
-```nextus
-logged_in && has_chats
 !locked
 ```
 
+The word forms `and`, `or` and `not` are **not** keywords. Use `&&`, `||` and `!`.
+
 ### String Concatenation
+
+`+` concatenates when either side is a string:
 
 ```nextus
 "Hello, " + username + "!"
+"Count: " + count          // number is converted
+"done: " + is_ready        // boolean is converted
 ```
+
+Whole numbers convert without a decimal point, so `"Count: " + 0` gives
+`"Count: 0"`, not `"Count: 0.0"`. When both sides are numbers, `+` adds.
+Lists, objects and elements have no text form and raise an error. The result
+counts against the max text length limit.
 
 ### Property Access
 
@@ -317,11 +335,7 @@ state.messages
 if count > 0 then "positive" else "zero or negative"
 ```
 
-**Ternary:**
-
-```nextus
-count > 0 ? "positive" : "zero or negative"
-```
+There is no ternary `? :` operator — `?` is not a token. Use `if … then … else …`.
 
 The `else` branch is optional when used as a statement inside `update`, but required in expressions used as a value.
 
@@ -341,12 +355,14 @@ The `else` branch is optional when used as a statement inside `update`, but requ
 
 ### Lambda (Anonymous Function)
 
-Used with `map`, `filter`, etc.:
+Parameters are always parenthesised:
 
 ```nextus
-map(messages, msg -> msg.text)
-filter(items, item -> item.visible)
+(msg) -> msg.text
+(item) -> item.visible
 ```
+
+The bare form `msg -> msg.text` does not parse.
 
 ---
 
@@ -354,42 +370,54 @@ filter(items, item -> item.visible)
 
 ### List Operations
 
-| Function | Description |
-|---|---|
-| `length(list)` | Number of items |
-| `append(list, item)` | New list with item added at the end |
-| `map(list, fn)` | New list with `fn` applied to each item |
-| `filter(list, fn)` | New list with only items where `fn` returns true |
-| `sort_by(list, fn)` | New list sorted ascending by the key returned by `fn` |
+| Function | Status | Description |
+|---|---|---|
+| `length(list)` | works | Number of items |
+| `append(list, item)` | works | New list with item added at the end |
+| `sort_by(list, fn)` | partial | New list sorted ascending by a numeric key |
+| `map(list, fn)` | **not implemented** | Returns a runtime error |
+| `filter(list, fn)` | **not implemented** | Returns a runtime error |
 
 ```nextus
 length(messages)
 append(messages, new_message)
-map(items, item -> item.text)
-filter(messages, m -> m.visible)
-sort_by(messages, m -> m.timestamp)
+sort_by(messages, (m) -> m.timestamp)
 ```
+
+`map` and `filter` fail at render with `InvalidOperation("map not yet
+implemented")`. Implementing them means calling a lambda during evaluation,
+which the current builtin signature cannot do.
+
+`sort_by` accepts only a lambda whose body is a single property access on its
+parameter, e.g. `(m) -> m.timestamp`. The key must be a number; items with a
+missing or non-numeric key sort as `0`. A plain property name also works:
+`sort_by(messages, "timestamp")`.
 
 ### String Operations
 
-| Function | Description |
-|---|---|
-| `length(string)` | Character count |
-| `concat(a, b)` | Concatenate two strings (same as `a + b`) |
-| `substring(str, start, end)` | Extract a slice (0-indexed) |
-| `contains(str, search)` | Returns `true` if `search` is found in `str` |
+| Function | Status | Description |
+|---|---|---|
+| `length(string)` | works | Byte count (not character count) |
+| `concat(a, b)` | **not defined** | Use `a + b` |
+| `substring(str, start, end)` | **not defined** | — |
+| `contains(str, search)` | **not defined** | — |
 
 ```nextus
 length(input_text)
-contains(message, "urgent")
-substring(text, 0, 100)
 ```
+
+Only `length` exists; the other three raise `UndefinedFunction`. Use the `+`
+operator to join strings.
 
 ### Utility
 
-| Function | Description |
-|---|---|
-| `now()` | Current Unix timestamp (ms), supplied by the runtime |
+| Function | Status | Description |
+|---|---|---|
+| `now()` | **not defined** | Raises `UndefinedFunction` |
+
+A `.nxt` program cannot read the clock. The language is deterministic, so time
+has to come in from the host alongside the event rather than from the runtime.
+Until a host-supplied `now` is wired up, pass timestamps through state.
 
 ---
 
@@ -423,7 +451,7 @@ Button {
     id: "send"
     text: "Send"
     variant: "Primary"
-    focusAfter: "msg-input"   -- after clicking Send, cursor returns to the input
+    focusAfter: "msg-input"   // after clicking Send, cursor returns to the input
 }
 ```
 
@@ -441,8 +469,8 @@ Button {
     text: "Save"
     variant: "Primary"
     action: "change_nick"
-    actionInput: "nick-input"   -- reads the value from Input with id="nick-input"
-    resultTo: "nick-result"     -- writes "✓ Nickname updated." into that element
+    actionInput: "nick-input"   // reads the value from Input with id="nick-input"
+    resultTo: "nick-result"     // writes "✓ Nickname updated." into that element
 }
 Input { id: "nick-input" placeholder: "New nickname…" }
 Button { id: "nick-result" text: "" variant: "Ghost" }
@@ -472,21 +500,21 @@ Button { id: "nick-result" text: "" variant: "Ghost" }
 When an action returns a **list** of records, `resultFormat` is a `{field}` template applied to each item. Items are joined with newlines and written into `resultTo`.
 
 ```nextus
--- Show only the nickname per friend
+// Show only the nickname per friend
 Button {
     action: "list_friends"
     resultTo: "friend-result"
     resultFormat: "{nickname}"
 }
 
--- Show nickname + id
+// Show nickname + id
 Button {
     action: "list_friends"
     resultTo: "friend-result"
     resultFormat: "{nickname} ({id})"
 }
 
--- Show chat name + unread count
+// Show chat name + unread count
 Button {
     action: "list_chats"
     resultTo: "chats-result"
@@ -511,6 +539,10 @@ If `resultFormat` is omitted, **all available fields** are shown automatically s
 #### `Container`
 
 Generic box. Wraps one or more children.
+
+> **Not wired up yet.** The runtime builds `Container` with fixed defaults and
+> reads none of the properties below; setting them is silently ignored. Use
+> `Column` or `Row` when you need spacing or padding today.
 
 | Property | Type | Default | Description |
 |---|---|---|---|
@@ -787,7 +819,7 @@ Input {
     value: input_text
     placeholder: "Type a message..."
     type: "Text"
-    focusAfter: "message_input"   -- pressing Enter refocuses this same input
+    focusAfter: "message_input"   // pressing Enter refocuses this same input
 }
 ```
 
@@ -861,7 +893,7 @@ Scroll {
     snapToBottom: true
     Column {
         spacing: 4
-        -- message elements...
+        // message elements...
     }
 }
 ```
@@ -926,12 +958,12 @@ Row {
     Part {
         width: 240
         resizable: true
-        -- sidebar content
+        // sidebar content
         Column { ... }
     }
     Part {
         width: "auto"
-        -- main content
+        // main content
         Column { ... }
     }
 }
@@ -1199,16 +1231,19 @@ Events are produced by user interaction and matched in `update` rules. The `id` 
 
 | Event | Trigger | Captured Variables |
 |---|---|---|
-| `MessageSent { text }` | Message send action | — |
-| `MessageReceived { message: m }` | New message arrives from server | `m` = message object |
-| `MessageDeleted { id: i }` | Message deleted | `i` = message id |
-| `MessageEdited { id: i, text: t }` | Message edited | `i` = id, `t` = new text |
-| `ReactionAdded { messageId: mid, emoji: e }` | Reaction added | `mid` = message id, `e` = emoji |
-| `ReactionRemoved { messageId: mid, emoji: e }` | Reaction removed | `mid`, `e` |
-| `TypingStarted { user: u }` | User starts typing | `u` = user info |
-| `TypingStopped { user: u }` | User stops typing | `u` = user info |
-| `SearchQueryChanged { query: q }` | Search text changed | `q` = query string |
+| `MessageSent` | Message send action | — (takes no block) |
+| `MessageReceived { msg: m }` | New message arrives from server | `m` = message object |
 | `ChatSelected { id: i }` | Chat item clicked | `i` = chat id |
+
+> **Not wired up yet.** `MessageDeleted`, `MessageEdited`, `ReactionAdded`,
+> `ReactionRemoved`, `TypingStarted`, `TypingStopped` and `SearchQueryChanged`
+> parse, but the parser discards their fields and turns each into the wildcard
+> pattern. A rule written as `when MessageDeleted { id: i } => …` therefore
+> matches **every** event and leaves `i` unbound. Don't rely on them yet. The
+> AST has proper variants for all of them; only the parser is missing.
+>
+> `ChatSelected { id: i }` is rewritten internally into
+> `InputChanged { id: "chat-list" }`, so it shares the input-changed path.
 
 ### Usage in Update
 
@@ -1219,7 +1254,7 @@ update {
         input_text: ""
     }
 
-    when MessageReceived { message: msg } => {
+    when MessageReceived { msg: msg } => {
         messages: append(messages, msg)
     }
 
@@ -1242,21 +1277,26 @@ update {
 
 ## 10. Resource Limits
 
-The runtime enforces these hard limits to ensure safety and predictability:
+`RuntimeLimits` defines these limits. The **Enforced** column says whether the
+runtime actually checks them today — the rest are declared but not yet wired in,
+tracked as ChatSick #52.
 
-| Limit | Default | Description |
-|---|---|---|
-| Max UI depth | 50 | Maximum nesting levels in the element tree |
-| Max children per container | 100 | Children per single element |
-| Max text length | 10,000 chars | Length of any single string value |
-| Max list items | 1,000 | Items in any list |
-| Max grid cells | 10,000 | Total cells in a Grid |
-| Max tabs | 50 | Tabs in a single Tab element |
-| Max memory per session | 100 MB | RAM used per running program |
-| Max render time | 100 ms | Time allowed per render call |
-| Max events per second | 100 | Rate-limit on incoming events |
+| Limit | Default | Enforced | Description |
+|---|---|---|---|
+| Max UI depth | 50 | yes | Maximum nesting levels in the element tree |
+| Max text length | 10,000 chars | yes | Length of any single string value, including the result of `+` |
+| Max list items | 1,000 | yes | Items in any list literal |
+| Max children per container | 100 | **no** | Children per single element |
+| Max grid cells | 10,000 | **no** | Total cells in a Grid |
+| Max tabs | 50 | **no** | Tabs in a single Tab element |
+| Max memory per session | 100 MB | **no** | RAM used per running program |
+| Max render time | 100 ms | **no** | Time allowed per render call |
+| Max events per second | 100 | **no** | Rate-limit on incoming events |
 
-Exceeding any limit produces a runtime error and halts the program safely without crashing the host application.
+An enforced limit that is exceeded produces a clean `RuntimeError::LimitExceeded`
+and never panics or hangs the host. The unenforced ones have validation code in
+`src/validator.rs`, but nothing calls it yet, so a program can exceed them
+silently.
 
 ---
 
@@ -1310,7 +1350,7 @@ state {
 
 view {
     Column {
-        -- Header
+        // Header
         Row {
             Avatar { src: "", size: 36, fallback: "CH" }
             Column {
@@ -1323,7 +1363,7 @@ view {
 
         Divider {}
 
-        -- Message area
+        // Message area
         MessageList {
             messages: messages
             autoScroll: true
@@ -1332,14 +1372,14 @@ view {
             groupSpacing: 12
         }
 
-        -- Typing indicator
+        // Typing indicator
         if length(typing_users) > 0
         then TypingIndicator { users: typing_users, showAvatars: true }
         else Spacer { height: 0 }
 
         Divider {}
 
-        -- Input bar
+        // Input bar
         Row {
             spacing: 8
             Input {
@@ -1367,7 +1407,7 @@ update {
         input_text: ""
     }
 
-    when MessageReceived { message: msg } => {
+    when MessageReceived { msg: msg } => {
         messages: append(messages, msg)
     }
 
@@ -1376,7 +1416,7 @@ update {
     }
 
     when TypingStopped { user: u } => {
-        typing_users: filter(typing_users, t -> t.name != u.name)
+        typing_users: filter(typing_users, (t) -> t.name != u.name)
     }
 }
 
@@ -1422,7 +1462,7 @@ view {
         Scroll {
             direction: "Vertical"
             List {
-                items: filter(chats, c -> contains(c.name, search_query))
+                items: filter(chats, (c) -> contains(c.name, search_query))
                 orientation: "Vertical"
                 spacing: 2
             }

@@ -9,9 +9,9 @@
 
   Syntax in your .nxt file:
     Button { id: "send"  text: "Send"  variant: Primary }
-    Label  { id: "my-name"  text: "Me" }
+    Text   { id: "my-name"  content: "Me" }
 
-  Any element type works (Button, Label, Text, Avatar, …).  The App finds
+  Any element type works (Button, Text, Avatar, …).  The App finds
   elements by their compiled  data-nxt-id="..."  HTML attribute.
 ══════════════════════════════════════════════════════════════════════════════
 
@@ -282,8 +282,8 @@
 
     Move focus to the message box when opening a chat:
       Button { id: "slot-chat-list"  focusAfter: "msg-input"  text: "Loading…" }
-      -- All generated chat buttons inherit this, so clicking any chat focuses
-      -- the message input automatically.
+      // All generated chat buttons inherit this, so clicking any chat focuses
+      // the message input automatically.
 
   No two elements need to carry focusAfter for the same action — only the
   element the user actually clicks determines the focus outcome.

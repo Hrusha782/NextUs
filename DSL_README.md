@@ -32,7 +32,7 @@ view(state) {
     Column {
         children: [
             Text { content: state.message },
-            Button { id: "click_me", label: "Click" }
+            Button { id: "click_me", text: "Click" }
         ]
     }
 }
@@ -262,8 +262,8 @@ view(state) {
     Column {
         children: [
             Text { content: "Count: " + state.count },
-            Button { id: "inc", label: "+" },
-            Button { id: "dec", label: "-" }
+            Button { id: "inc", text: "+" },
+            Button { id: "dec", text: "-" }
         ]
     }
 }
