@@ -461,6 +461,8 @@ mod tests {
     }
     
     #[test]
+    // 3.14 is a decimal literal under test, not an approximation of PI.
+    #[allow(clippy::approx_constant)]
     fn test_numbers() {
         let mut lexer = Lexer::new("42 3.14 0 100.0");
         let tokens = lexer.tokenize().unwrap();
