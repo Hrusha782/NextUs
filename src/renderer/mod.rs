@@ -2,9 +2,11 @@
 //!
 //! Provides layout computation and memory tracking for UI elements.
 
+pub mod html;
 mod layout_engine;
 mod memory_tracker;
 
+pub use html::render_html;
 pub use layout_engine::{ComputedLayout, LayoutEngine, LayoutNode, LayoutResult};
 pub use memory_tracker::{AllocationInfo, MemoryStats, MemoryTracker};
 

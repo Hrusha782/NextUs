@@ -1,0 +1,57 @@
+// Shows how a design wires itself to the app through DESIGN_IDS.txt ids.
+// Render the DOM the app would mount with:
+//     nextus --html examples/design_ids.nxt
+
+state {
+    unread: 3
+}
+
+view {
+    Column {
+        spacing: 12
+
+        // LABEL id: the app overwrites this text with the live nickname.
+        Text { id: "my-name"  content: "…" }
+
+        Text { content: "Unread: " + unread }
+
+        // SLOT id: the app replaces this element with one button per chat.
+        Button { id: "slot-chat-list"  text: "Loading chats…"  variant: "Ghost" }
+
+        Row {
+            spacing: 8
+
+            Input { id: "msg-input"  placeholder: "Write a message…" }
+
+            // ACTION id: sends the text in the nearest .nxt-input field.
+            Button { id: "send"  text: "Send"  variant: "Primary"  focusAfter: "msg-input" }
+        }
+
+        Row {
+            spacing: 8
+
+            Input { id: "friend-input"  placeholder: "Friend's user ID" }
+
+            // A backend action reading one input and writing its result back.
+            // `add_friend` works in any context; account-level actions such as
+            // change_nick, verify_password and logout are shell-only.
+            Button {
+                id: "friend-add"
+                text: "Add friend"
+                variant: "Secondary"
+                action: "add_friend"
+                actionInput: "friend-input"
+                resultTo: "friend-result"
+                focusAfter: "friend-input"
+            }
+        }
+
+        Text { id: "friend-result"  content: "" }
+    }
+}
+
+update {
+    when Clicked { id: "send" } => {
+        unread: 0
+    }
+}

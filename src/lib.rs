@@ -41,6 +41,7 @@ pub use primitives::scrolling::{
     List, ListOrientation, MessageItem, MessageList, Scroll, ScrollBar, ScrollBarVisibility,
     ScrollDirection,
 };
+pub use renderer::render_html;
 pub use runtime::{Runtime, RuntimeError};
 pub use state::{State, StateHistory, Value};
 pub use style::{Alignment, Borders, Colour, Margins, Padding, Size, Style};

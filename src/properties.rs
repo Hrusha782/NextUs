@@ -62,9 +62,13 @@ impl Properties {
         Self::default()
     }
 
+    /// Set the element id. An empty string means "no id", so callers can pass
+    /// an absent property straight through without creating `Some("")`, which
+    /// would emit a meaningless `data-nxt-id=""` into the DOM.
     pub fn with_id(self, id: impl Into<String>) -> Self {
+        let id = id.into();
         Self {
-            id: Some(id.into()),
+            id: if id.is_empty() { None } else { Some(id) },
             ..self
         }
     }

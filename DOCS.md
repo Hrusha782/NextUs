@@ -24,7 +24,8 @@ NextUs (`.nxt`) is a declarative, pure, domain-specific language for building me
    - [Result Formatting](#result-formatting)
 9. [Events (Messages)](#9-events-messages)
 10. [Resource Limits](#10-resource-limits)
-11. [Full Examples](#11-full-examples)
+11. [HTML Output](#11-html-output)
+12. [Full Examples](#12-full-examples)
 
 ---
 
@@ -478,20 +479,25 @@ Button { id: "nick-result" text: "" variant: "Ghost" }
 
 #### Available Actions
 
-| Action | `actionInput` | Returns | Description |
-|---|---|---|---|
-| `change_nick` | Input ID (new nickname) | status string | Change your display nickname |
-| `verify_password` | Input ID (password) | status string | Check if a password is correct |
-| `add_friend` | Input ID (user ID) | status string | Send a friend request |
-| `remove_friend` | Input ID (user ID) | status string | Remove a friend |
-| `list_friends` | — | list `{nickname, id}` | List all friends |
-| `create_chat` | Input ID (comma-separated user IDs) | status string | Create a new chat |
-| `leave_chat` | — | status string | Leave the currently open chat |
-| `block_user` | Input ID (user ID) | status string | Block a user |
-| `unblock_user` | Input ID (user ID) | status string | Unblock a user |
-| `list_blocked` | — | list `{nickname, id}` | List all blocked users |
-| `list_chats` | — | list `{name, id, unread}` | List all chats |
-| `logout` | — | — | Log out and return to login screen |
+**Context matters.** Account-level actions are only valid in the shell. A
+design or a build must not use them, and the host is expected to reject them:
+the language does **not** enforce this yet — there is no context-scoped
+allowlist, so `action:` reaches the DOM verbatim whatever it says.
+
+| Action | Context | `actionInput` | Returns | Description |
+|---|---|---|---|---|
+| `change_nick` | **shell only** | Input ID (new nickname) | status string | Change your display nickname |
+| `verify_password` | **shell only** | Input ID (password) | status string | Check if a password is correct |
+| `add_friend` | any | Input ID (user ID) | status string | Send a friend request |
+| `remove_friend` | any | Input ID (user ID) | status string | Remove a friend |
+| `list_friends` | any | — | list `{nickname, id}` | List all friends |
+| `create_chat` | any | Input ID (comma-separated user IDs) | status string | Create a new chat |
+| `leave_chat` | any | — | status string | Leave the currently open chat |
+| `block_user` | any | Input ID (user ID) | status string | Block a user |
+| `unblock_user` | any | Input ID (user ID) | status string | Unblock a user |
+| `list_blocked` | any | — | list `{nickname, id}` | List all blocked users |
+| `list_chats` | any | — | list `{name, id, unread}` | List all chats |
+| `logout` | **shell only** | — | — | Log out and return to login screen |
 
 ---
 
@@ -1300,7 +1306,113 @@ silently.
 
 ---
 
-## 11. Full Examples
+## 11. HTML Output
+
+A rendered element tree becomes HTML that the host app mounts. See it for any
+program with:
+
+```bash
+nextus --html examples/counter.nxt
+```
+
+### What the app relies on
+
+| Rule | Why |
+|---|---|
+| An element with an `id` carries `data-nxt-id="<id>"` | This is how the app finds elements: `querySelector('[data-nxt-id="send"]')`. An element with no `id` carries no such attribute. |
+| One DOM node per element for layout and content | The app walks `.parentElement` — for example to find the column holding the message context menu. A wrapper between a container and its children would break it. See the exceptions below. |
+| `Input` always has class `nxt-input` | The send action looks for the nearest `.nxt-input` field. |
+| `MessageBubble` always has class `nxt-bubble` | Right-click handling is bound to it. |
+
+Behaviour properties become `data-` attributes of the same name in kebab-case:
+
+| Property | Attribute |
+|---|---|
+| `navigate` | `data-nxt-navigate` |
+| `action` | `data-nxt-action` |
+| `actionInput` | `data-nxt-action-input` |
+| `resultTo` | `data-nxt-result-to` |
+| `resultFormat` | `data-nxt-result-format` |
+| `focusAfter` | `data-nxt-focus-after` |
+
+### Example
+
+```nextus
+Column {
+    spacing: 10
+    Text { content: "Counter: " + count }
+    Button { id: "increment"  text: "+" }
+}
+```
+
+```html
+<div class="nxt-column" style="display:flex;flex-direction:column;gap:10px;align-items:flex-start;justify-content:flex-start"><span class="nxt-text">Counter: 0</span><button class="nxt-button nxt-button-primary" type="button" data-nxt-id="increment">+</button></div>
+```
+
+### Elements that are not one node
+
+Most elements, and every layout container, emit exactly one node whose direct
+children are the children you wrote. These are the exceptions — don't rely on
+`.parentElement` across them:
+
+| Element | Emits |
+|---|---|
+| `MessageList` | one `div.nxt-message-item` wrapper per message, carrying `data-nxt-index` and the per-item alignment |
+| `Modal` | `div.nxt-modal-overlay` wrapping `div.nxt-modal` |
+| `Panel` | `div.nxt-panel-header` and `div.nxt-panel-content` inside the panel |
+| `Tab` | a `div.nxt-tab-bar` of buttons plus one `div.nxt-tab-panel` per tab |
+| `Checkbox` | a `label` wrapping the `input` and a caption `span` |
+| `Reaction`, `Reply`, `Attachment`, `SearchBar` | inner `span`s for their parts |
+
+### Guarantees
+
+- **Escaped.** Text and attribute values are escaped, so a `.nxt` program
+  cannot inject markup or break out of an attribute.
+- **Deterministic.** The same element tree always produces byte-identical
+  HTML; attribute order is fixed.
+- **Compact.** No whitespace is inserted between nodes, so no stray text nodes
+  appear. Pipe the output through a formatter if you want it indented.
+- **Defaults are not inlined.** Only style values that differ from the
+  defaults become inline CSS, so the app's stylesheet still applies.
+- **Booleans are explicit.** Every `data-nxt-*` boolean is written as
+  `"true"` or `"false"`, never as a valueless attribute, so the host can read
+  `el.dataset.nxtAutoScroll === "true"`. Real HTML boolean attributes
+  (`disabled`, `checked`, `readonly`, `required`, `selected`, `multiple`) stay
+  valueless, as HTML requires.
+- **Script URLs are dropped.** A `src` using `javascript:`, `vbscript:` or a
+  non-image `data:` URL is replaced with an empty string.
+
+### What the host still has to enforce
+
+Rendering escapes markup, but it cannot make the program sandboxed on its own:
+
+- **Remote URLs.** An `https:` `src` is allowed and is a real outbound request
+  made by the host when it renders. A build is seen by every member of a chat,
+  so an image URL is a usable tracking pixel. Apply a CSP.
+- **Action scope.** `action:` is written through to `data-nxt-action`
+  verbatim. The language has no notion of context yet, so the host must
+  reject shell-only actions (`change_nick`, `verify_password`, `logout`)
+  arriving from a design or a build.
+
+### Limits
+
+Only 11 of the 32 primitives carry `Properties`, and so only those can have an
+`id`, a class, or any of the behaviour properties:
+
+- **Content**: `Text`, `Image`, `Avatar`, `Badge`, `Status`, `Timestamp`, `Tooltip`
+- **Input**: `Button`, `Input`, `Checkbox`, `Dropdown`
+
+On the other 21 — every layout container, `Scroll`, `List`, `MessageList`,
+`Part`, `Tab`, `Panel`, `Popover`, `Modal`, `MessageBubble`, `Reaction`,
+`Reply`, `Attachment`, `TypingIndicator`, `SearchBar` — an `id:` is **silently
+dropped**, with no parse error, validation error or LSP warning. Put the id on
+a content or input element instead. This contradicts `DESIGN_IDS.txt`, which
+says "any element type works"; closing the gap means adding `Properties` to
+those primitives.
+
+---
+
+## 12. Full Examples
 
 ### Counter
 

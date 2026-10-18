@@ -28,6 +28,13 @@ fn main() {
             }
             run_check(&args[2]);
         }
+        "--html" => {
+            if args.len() < 3 {
+                eprintln!("Error: --html requires a file path");
+                std::process::exit(1);
+            }
+            run_html(&args[2]);
+        }
         "--ast" => {
             if args.len() < 3 {
                 eprintln!("Error: --ast requires a file path");
@@ -52,6 +59,7 @@ fn print_usage() {
     eprintln!("USAGE:");
     eprintln!("    nextus <file.nxt>              Run a NextUs program");
     eprintln!("    nextus --check <file.nxt>      Validate without running");
+    eprintln!("    nextus --html <file.nxt>       Render once and print the HTML");
     eprintln!("    nextus --ast <file.nxt>        Show the AST");
     eprintln!("    nextus --help                  Show this help");
     eprintln!("    nextus --version               Show version");
@@ -113,6 +121,36 @@ fn run_ast(file_path: &str) {
         }
         Err(e) => {
             eprintln!("✗ {}", e);
+            std::process::exit(1);
+        }
+    }
+}
+
+/// Render once and print the HTML the host app would mount.
+///
+/// Only the markup goes to stdout, so the output can be piped straight into a
+/// file or a formatter; progress and errors go to stderr.
+fn run_html(file_path: &str) {
+    let program = match load_and_parse(file_path) {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!("✗ {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    let runtime = match Runtime::new(program, RuntimeLimits::default()) {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!("✗ Runtime error: {:?}", e);
+            std::process::exit(1);
+        }
+    };
+
+    match runtime.render() {
+        Ok(element) => println!("{}", nextus::render_html(&element)),
+        Err(e) => {
+            eprintln!("✗ Render error: {:?}", e);
             std::process::exit(1);
         }
     }

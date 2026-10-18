@@ -519,6 +519,21 @@ impl Runtime {
             }
         });
 
+        // Behaviour properties shared by every element, built once so the set
+        // the host receives cannot drift between primitives.
+        let base_properties = Properties::default()
+            .with_id(get_id().unwrap_or_default())
+            .with_focus_after(focus_after.clone())
+            .with_navigate(navigate.clone())
+            .with_action(action.clone())
+            .with_action_input(action_input.clone())
+            .with_result_to(result_to.clone())
+            .with_result_format(result_format.clone())
+            .visible(get_bool("visible", true))
+            .enabled(get_bool("enabled", true))
+            .focusable(get_bool("focusable", false))
+            .draggable(get_bool("draggable", false));
+
         // Match element type and construct
         let element = match element_type {
             "Column" => Element::Column(Column {
@@ -612,38 +627,20 @@ impl Runtime {
             }
 
             "Text" => Element::Text(Text {
-                properties: Properties::default()
-                    .with_id(get_id().unwrap_or_default())
-                    .with_focus_after(focus_after.clone())
-                    .with_navigate(navigate.clone())
-                    .with_action(action.clone())
-                    .with_action_input(action_input.clone())
-                    .with_result_to(result_to.clone()),
+                properties: base_properties.clone(),
                 style: Style::default(),
                 content: get_string("content", ""),
             }),
 
             "Image" => Element::Image(Image {
-                properties: Properties::default()
-                    .with_id(get_id().unwrap_or_default())
-                    .with_focus_after(focus_after.clone())
-                    .with_navigate(navigate.clone())
-                    .with_action(action.clone())
-                    .with_action_input(action_input.clone())
-                    .with_result_to(result_to.clone()),
+                properties: base_properties.clone(),
                 style: Style::default(),
                 src: get_string("src", ""),
                 alt: get_string("alt", ""),
             }),
 
             "Avatar" => Element::Avatar(Avatar {
-                properties: Properties::default()
-                    .with_id(get_id().unwrap_or_default())
-                    .with_focus_after(focus_after.clone())
-                    .with_navigate(navigate.clone())
-                    .with_action(action.clone())
-                    .with_action_input(action_input.clone())
-                    .with_result_to(result_to.clone()),
+                properties: base_properties.clone(),
                 style: Style::default(),
                 src: get_string("src", ""),
                 size: get_f32("size", 40.0),
@@ -665,13 +662,7 @@ impl Runtime {
                     _ => BadgeVariant::Primary,
                 };
                 Element::Badge(Badge {
-                    properties: Properties::default()
-                        .with_id(get_id().unwrap_or_default())
-                        .with_focus_after(focus_after.clone())
-                        .with_navigate(navigate.clone())
-                        .with_action(action.clone())
-                        .with_action_input(action_input.clone())
-                        .with_result_to(result_to.clone()),
+                    properties: base_properties.clone(),
                     style: Style::default(),
                     content: get_string("content", ""),
                     variant,
@@ -687,13 +678,7 @@ impl Runtime {
                     _ => StatusType::Online,
                 };
                 Element::Status(Status {
-                    properties: Properties::default()
-                        .with_id(get_id().unwrap_or_default())
-                        .with_focus_after(focus_after.clone())
-                        .with_navigate(navigate.clone())
-                        .with_action(action.clone())
-                        .with_action_input(action_input.clone())
-                        .with_result_to(result_to.clone()),
+                    properties: base_properties.clone(),
                     style: Style::default(),
                     status,
                     show_text: get_bool("show_text", false),
@@ -712,13 +697,7 @@ impl Runtime {
                     _ => TimestampFormat::ShortTime,
                 };
                 Element::Timestamp(Timestamp {
-                    properties: Properties::default()
-                        .with_id(get_id().unwrap_or_default())
-                        .with_focus_after(focus_after.clone())
-                        .with_navigate(navigate.clone())
-                        .with_action(action.clone())
-                        .with_action_input(action_input.clone())
-                        .with_result_to(result_to.clone()),
+                    properties: base_properties.clone(),
                     style: Style::default(),
                     time: get_f32("time", 0.0) as u64,
                     format,
@@ -735,13 +714,7 @@ impl Runtime {
                     _ => TooltipPosition::Top,
                 };
                 Element::Tooltip(Tooltip {
-                    properties: Properties::default()
-                        .with_id(get_id().unwrap_or_default())
-                        .with_focus_after(focus_after.clone())
-                        .with_navigate(navigate.clone())
-                        .with_action(action.clone())
-                        .with_action_input(action_input.clone())
-                        .with_result_to(result_to.clone()),
+                    properties: base_properties.clone(),
                     style: Style::default(),
                     content: get_string("content", ""),
                     target_id: get_string("target_id", ""),
@@ -760,14 +733,7 @@ impl Runtime {
                     _ => ButtonVariant::Primary,
                 };
                 Element::Button(Button {
-                    properties: Properties::default()
-                        .with_id(get_id().unwrap_or_default())
-                        .with_focus_after(focus_after.clone())
-                        .with_navigate(navigate.clone())
-                        .with_action(action.clone())
-                        .with_action_input(action_input.clone())
-                        .with_result_to(result_to.clone())
-                        .with_result_format(result_format.clone()),
+                    properties: base_properties.clone(),
                     style: Style::default(),
                     text: get_string("text", ""),
                     variant,
@@ -784,13 +750,7 @@ impl Runtime {
                     _ => InputType::Text,
                 };
                 Element::Input(Input {
-                    properties: Properties::default()
-                        .with_id(get_id().unwrap_or_default())
-                        .with_focus_after(focus_after.clone())
-                        .with_navigate(navigate.clone())
-                        .with_action(action.clone())
-                        .with_action_input(action_input.clone())
-                        .with_result_to(result_to.clone()),
+                    properties: base_properties.clone(),
                     style: Style::default(),
                     value: get_string("value", ""),
                     placeholder: get_string("placeholder", ""),
@@ -808,13 +768,7 @@ impl Runtime {
             }
 
             "Checkbox" => Element::Checkbox(Checkbox {
-                properties: Properties::default()
-                    .with_id(get_id().unwrap_or_default())
-                    .with_focus_after(focus_after.clone())
-                    .with_navigate(navigate.clone())
-                    .with_action(action.clone())
-                    .with_action_input(action_input.clone())
-                    .with_result_to(result_to.clone()),
+                properties: base_properties.clone(),
                 style: Style::default(),
                 checked: get_bool("checked", false),
                 label: get_string("label", ""),
@@ -822,13 +776,7 @@ impl Runtime {
             }),
 
             "Dropdown" => Element::Dropdown(Dropdown {
-                properties: Properties::default()
-                    .with_id(get_id().unwrap_or_default())
-                    .with_focus_after(focus_after.clone())
-                    .with_navigate(navigate.clone())
-                    .with_action(action.clone())
-                    .with_action_input(action_input.clone())
-                    .with_result_to(result_to.clone()),
+                properties: base_properties.clone(),
                 style: Style::default(),
                 options: vec![],
                 selected_index: None,

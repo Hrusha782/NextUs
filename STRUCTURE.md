@@ -165,6 +165,17 @@ NextUs/
 - ✅ State history (undo/redo)
 - ✅ Time-travel debugging
 
+### HTML/DOM Output
+- ✅ `create_element()` builds typed primitives for all 32 element names
+- ✅ `render_html()` emits HTML tagged with `data-nxt-id` for the host app
+- ✅ Text and attributes escaped; output deterministic and compact
+- ✅ `nextus --html <file.nxt>` prints the markup
+- 🚧 Layout primitives carry no `Properties`, so they cannot have an `id`
+
+There is no GPU or canvas backend and none is planned: the host app owns
+painting. [`src/renderer/`](src/renderer/) also holds an early layout engine
+and memory tracker, neither of which is on the render path.
+
 ### Messenger-Optimized
 - ✅ Message bubbles with reactions
 - ✅ Virtual scrolling for performance
@@ -175,40 +186,30 @@ NextUs/
 
 ## 🚧 Next Steps to Complete
 
-### 1. DOM Output
-`create_element()` in [`runtime.rs`](src/runtime.rs) already turns AST elements
-into typed primitives for all 32 element names in `ELEMENT_NAMES`. What is still
-missing is emitting those primitives as HTML/DOM tagged with `data-nxt-id`,
-which is what the ChatSick shell consumes.
-
-There is no GPU or canvas backend and none is planned: output is HTML/DOM, so
-the host app owns painting. [`src/renderer/`](src/renderer/) holds an early
-layout engine and memory tracker, neither of which is on the render path.
-
-### 2. Lambda Support
+### 1. Lambda Support
 `map()` and `filter()` are stubs that return an error. They need to call a
 lambda during evaluation, which means threading state and limits into the
 builtin signature.
 
-### 3. Style Application
+### 2. Style Application
 `style` rules parse into `Program::styles`, but nothing matches or applies them
 during render. Note `parse_style_block`/`parse_style_rule` in the parser are a
 second, unused implementation and should be removed or wired in.
 
-### 4. More Built-in Functions
+### 3. More Built-in Functions
 `concat`, `substring`, `contains` and `now` are documented as absent. `now`
 must stay host-supplied so the runtime remains deterministic.
 
-### 5. Positions in Errors
+### 4. Positions in Errors
 The lexer tracks line and column but drops them when it emits `Vec<Token>`, so
 `ParseError` carries no position and `lsp/diagnostics.rs` recovers one by
 string-scraping the error text. Positioned tokens would fix inline diagnostics.
 
-### 6. Limit Enforcement
+### 5. Limit Enforcement
 `src/validator.rs` is written but never called. Children per container, grid
 cells, tabs, memory, render time and events/s are unenforced (ChatSick #52).
 
-### 7. Documentation
+### 6. Documentation
 - Reconcile `DOCS.md` and `DSL_README.md`, which overlap and disagree
 - Tutorial and cookbook
 
