@@ -466,38 +466,47 @@ Buttons can call backend API actions directly using the `action` property. Resul
 
 ```nextus
 Button {
-    id: "btn-save-nick"
-    text: "Save"
+    id: "btn-add-friend"
+    text: "Add"
     variant: "Primary"
-    action: "change_nick"
-    actionInput: "nick-input"   // reads the value from Input with id="nick-input"
-    resultTo: "nick-result"     // writes "✓ Nickname updated." into that element
+    action: "add_friend"
+    actionInput: "friend-input"   // reads the value from Input with id="friend-input"
+    resultTo: "friend-result"     // writes "✓ Friend request sent." into that element
 }
-Input { id: "nick-input" placeholder: "New nickname…" }
-Button { id: "nick-result" text: "" variant: "Ghost" }
+Input { id: "friend-input" placeholder: "User ID…" }
+Text { id: "friend-result" content: "" }
 ```
 
 #### Available Actions
 
-**Context matters.** Account-level actions are only valid in the shell. A
-design or a build must not use them, and the host is expected to reject them:
-the language does **not** enforce this yet — there is no context-scoped
-allowlist, so `action:` reaches the DOM verbatim whatever it says.
+Account-level behaviour is **not** part of the language. Changing a nickname,
+checking a password and logging out are fixed app behaviours that live in the
+app's own non-programmable chrome, so no `.nxt` program can request them.
+`change_nick`, `verify_password` and `logout` are rejected by
+`nextus --check`:
 
-| Action | Context | `actionInput` | Returns | Description |
-|---|---|---|---|---|
-| `change_nick` | **shell only** | Input ID (new nickname) | status string | Change your display nickname |
-| `verify_password` | **shell only** | Input ID (password) | status string | Check if a password is correct |
-| `add_friend` | any | Input ID (user ID) | status string | Send a friend request |
-| `remove_friend` | any | Input ID (user ID) | status string | Remove a friend |
-| `list_friends` | any | — | list `{nickname, id}` | List all friends |
-| `create_chat` | any | Input ID (comma-separated user IDs) | status string | Create a new chat |
-| `leave_chat` | any | — | status string | Leave the currently open chat |
-| `block_user` | any | Input ID (user ID) | status string | Block a user |
-| `unblock_user` | any | Input ID (user ID) | status string | Unblock a user |
-| `list_blocked` | any | — | list `{nickname, id}` | List all blocked users |
-| `list_chats` | any | — | list `{name, id, unread}` | List all chats |
-| `logout` | **shell only** | — | — | Log out and return to login screen |
+```
+✗ Validation error: 'verify_password' cannot be used as action: it is an
+  account-level action performed by the app itself, not by a design or a build.
+```
+
+The reason is who writes a program versus who runs it. In the shell those are
+the same person. A build is written by one chat owner and rendered by every
+member of the chat, so an account action in a build would act on somebody
+else's account — a chat owner could put up a convincing "confirm your
+password" panel. The reserved names are listed in `src/reserved.rs`.
+
+| Action | `actionInput` | Returns | Description |
+|---|---|---|---|
+| `add_friend` | Input ID (user ID) | status string | Send a friend request |
+| `remove_friend` | Input ID (user ID) | status string | Remove a friend |
+| `list_friends` | — | list `{nickname, id}` | List all friends |
+| `create_chat` | Input ID (comma-separated user IDs) | status string | Create a new chat |
+| `leave_chat` | — | status string | Leave the currently open chat |
+| `block_user` | Input ID (user ID) | status string | Block a user |
+| `unblock_user` | Input ID (user ID) | status string | Unblock a user |
+| `list_blocked` | — | list `{nickname, id}` | List all blocked users |
+| `list_chats` | — | list `{name, id, unread}` | List all chats |
 
 ---
 
@@ -1389,26 +1398,24 @@ Rendering escapes markup, but it cannot make the program sandboxed on its own:
 - **Remote URLs.** An `https:` `src` is allowed and is a real outbound request
   made by the host when it renders. A build is seen by every member of a chat,
   so an image URL is a usable tracking pixel. Apply a CSP.
-- **Action scope.** `action:` is written through to `data-nxt-action`
-  verbatim. The language has no notion of context yet, so the host must
-  reject shell-only actions (`change_nick`, `verify_password`, `logout`)
-  arriving from a design or a build.
+- **Reserved names.** `nextus --check` rejects account-level actions and ids
+  (`src/reserved.rs`), so they cannot reach the DOM from a `.nxt` file. A host
+  that builds a DOM by some other route should still refuse them.
 
-### Limits
+### Ids work on every element
 
-Only 11 of the 32 primitives carry `Properties`, and so only those can have an
-`id`, a class, or any of the behaviour properties:
+All 32 primitives carry `Properties`, so `id:`, `class:` and the behaviour
+properties work on any of them — as `DESIGN_IDS.txt` promises. Nothing is
+silently dropped:
 
-- **Content**: `Text`, `Image`, `Avatar`, `Badge`, `Status`, `Timestamp`, `Tooltip`
-- **Input**: `Button`, `Input`, `Checkbox`, `Dropdown`
+```nextus
+Column       { id: "msg-ctx-menu"  … }
+MessageBubble { id: "slot-messages"  … }
+```
 
-On the other 21 — every layout container, `Scroll`, `List`, `MessageList`,
-`Part`, `Tab`, `Panel`, `Popover`, `Modal`, `MessageBubble`, `Reaction`,
-`Reply`, `Attachment`, `TypingIndicator`, `SearchBar` — an `id:` is **silently
-dropped**, with no parse error, validation error or LSP warning. Put the id on
-a content or input element instead. This contradicts `DESIGN_IDS.txt`, which
-says "any element type works"; closing the gap means adding `Properties` to
-those primitives.
+One thing to know: when an element that holds a single child is given several,
+the runtime wraps them in a `Column` of its own. That wrapper is not your
+element, so it carries no `id` and never repeats yours.
 
 ---
 

@@ -1,3 +1,4 @@
+use crate::properties::Properties;
 use crate::style::{Alignment, Colour, Padding, Size};
 use crate::Element;
 
@@ -29,6 +30,7 @@ pub struct ScrollBar {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Scroll {
+    pub properties: Properties,
     pub child: Box<Element>,
     pub direction: ScrollDirection,
     pub width: Size,
@@ -47,6 +49,7 @@ pub enum ListOrientation {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct List {
+    pub properties: Properties,
     pub items: Vec<Element>,
     pub orientation: ListOrientation,
     pub item_height: f32,
@@ -93,6 +96,7 @@ pub struct MessageItem {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MessageList {
+    pub properties: Properties,
     pub messages: Vec<MessageItem>,
     pub width: Size,
     pub height: Size,

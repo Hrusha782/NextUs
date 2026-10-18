@@ -433,6 +433,7 @@ fn write_element(out: &mut String, element: &Element) {
 
 fn container(out: &mut String, e: &Container) {
     Tag::new("div", "nxt-container")
+        .props(&e.properties)
         .size(&e.width, &e.height)
         .padding(&e.padding)
         .css_opt(
@@ -446,6 +447,7 @@ fn container(out: &mut String, e: &Container) {
 
 fn row(out: &mut String, e: &Row) {
     Tag::new("div", "nxt-row")
+        .props(&e.properties)
         .css_decl("display", "flex")
         .css_decl("flex-direction", "row")
         .css_decl("gap", px(e.spacing))
@@ -459,6 +461,7 @@ fn row(out: &mut String, e: &Row) {
 
 fn column(out: &mut String, e: &Column) {
     Tag::new("div", "nxt-column")
+        .props(&e.properties)
         .css_decl("display", "flex")
         .css_decl("flex-direction", "column")
         .css_decl("gap", px(e.spacing))
@@ -475,6 +478,7 @@ fn stack(out: &mut String, e: &Stack) {
         Direction::Horizontal => "row",
     };
     Tag::new("div", "nxt-stack")
+        .props(&e.properties)
         .css_decl("display", "flex")
         .css_decl("flex-direction", direction)
         .css_decl("gap", px(e.spacing))
@@ -487,6 +491,7 @@ fn stack(out: &mut String, e: &Stack) {
 
 fn grid(out: &mut String, e: &Grid) {
     Tag::new("div", "nxt-grid")
+        .props(&e.properties)
         .css_decl("display", "grid")
         .css_decl(
             "grid-template-columns",
@@ -502,13 +507,14 @@ fn grid(out: &mut String, e: &Grid) {
 
 fn spacer(out: &mut String, e: &Spacer) {
     Tag::new("div", "nxt-spacer")
+        .props(&e.properties)
         .size(&e.width, &e.height)
         .css_opt("flex-grow", e.grow.map(|g| format_number(g as f64)))
         .empty(out);
 }
 
 fn divider(out: &mut String, e: &Divider) {
-    let tag = Tag::new("hr", "nxt-divider").void();
+    let tag = Tag::new("hr", "nxt-divider").props(&e.properties).void();
     let tag = match e.orientation {
         Orientation::Horizontal => tag
             .css_decl("border-width", format!("{} 0 0 0", px(e.thickness)))
@@ -775,6 +781,7 @@ fn scroll(out: &mut String, e: &Scroll) {
         ScrollDirection::Both => ("auto", "auto"),
     };
     Tag::new("div", "nxt-scroll")
+        .props(&e.properties)
         .css_decl("overflow-x", overflow_x)
         .css_decl("overflow-y", overflow_y)
         .css_opt(
@@ -793,6 +800,7 @@ fn list(out: &mut String, e: &List) {
         ListOrientation::Horizontal => "row",
     };
     Tag::new("div", "nxt-list")
+        .props(&e.properties)
         .css_decl("display", "flex")
         .css_decl("flex-direction", direction)
         .css_decl("gap", px(e.spacing))
@@ -804,6 +812,7 @@ fn list(out: &mut String, e: &List) {
 
 fn message_list(out: &mut String, e: &MessageList) {
     let outer = Tag::new("div", "nxt-message-list")
+        .props(&e.properties)
         .css_decl("display", "flex")
         .css_decl(
             "flex-direction",
@@ -839,6 +848,7 @@ fn message_list(out: &mut String, e: &MessageList) {
 
 fn part(out: &mut String, e: &Part) {
     Tag::new("div", "nxt-part")
+        .props(&e.properties)
         .data_bool("data-nxt-resizable", e.resizable)
         .attr("data-nxt-direction", e.direction.clone())
         .size(&e.width, &e.height)
@@ -856,6 +866,7 @@ fn part(out: &mut String, e: &Part) {
 
 fn tab(out: &mut String, e: &Tab) {
     let outer = Tag::new("div", "nxt-tab")
+        .props(&e.properties)
         .attr("data-nxt-active-index", e.active_index.to_string())
         .attr(
             "data-nxt-bar-position",
@@ -895,6 +906,7 @@ fn tab(out: &mut String, e: &Tab) {
 
 fn panel(out: &mut String, e: &Panel) {
     let outer = Tag::new("div", "nxt-panel")
+        .props(&e.properties)
         .data_bool("data-nxt-expanded", e.expanded)
         .size(&e.width, &e.height)
         .padding(&e.padding);
@@ -932,6 +944,7 @@ fn popover(out: &mut String, e: &Popover) {
         PopoverPosition::Cursor => "cursor",
     };
     Tag::new("div", "nxt-popover")
+        .props(&e.properties)
         .attr("data-nxt-position", position)
         .data_bool("data-nxt-arrow", e.arrow)
         .data_bool("data-nxt-dismiss-outside", e.dismiss_on_click_outside)
@@ -948,6 +961,7 @@ fn popover(out: &mut String, e: &Popover) {
 
 fn modal(out: &mut String, e: &Modal) {
     let overlay = Tag::new("div", "nxt-modal-overlay")
+        .props(&e.properties)
         .css_decl("background-color", css_colour(&e.overlay_colour))
         .css_opt(
             "backdrop-filter",
@@ -978,6 +992,7 @@ fn message_bubble(out: &mut String, e: &MessageBubble) {
         MessageBubbleType::System => "system",
     };
     Tag::new("div", "nxt-bubble")
+        .props(&e.properties)
         .class(format!("nxt-bubble-{}", kind))
         .attr("data-nxt-bubble-type", kind)
         .css_decl("background-color", css_colour(&e.background_colour))
@@ -995,6 +1010,7 @@ fn message_bubble(out: &mut String, e: &MessageBubble) {
 
 fn reaction(out: &mut String, e: &Reaction) {
     let outer = Tag::new("div", "nxt-reactions")
+        .props(&e.properties)
         .css_decl("display", "flex")
         .css_decl("gap", px(e.spacing))
         .padding(&e.padding);
@@ -1016,7 +1032,9 @@ fn reaction(out: &mut String, e: &Reaction) {
 }
 
 fn reply(out: &mut String, e: &Reply) {
-    let outer = Tag::new("div", "nxt-reply").data_bool("data-nxt-icon", e.show_icon);
+    let outer = Tag::new("div", "nxt-reply")
+        .props(&e.properties)
+        .data_bool("data-nxt-icon", e.show_icon);
     outer.open(out);
 
     Tag::new("span", "nxt-reply-sender").text(out, &e.original_sender);
@@ -1041,6 +1059,7 @@ fn attachment(out: &mut String, e: &Attachment) {
         AttachmentType::Other => "other",
     };
     let outer = Tag::new("div", "nxt-attachment")
+        .props(&e.properties)
         .class(format!("nxt-attachment-{}", kind))
         .attr("data-nxt-file-type", kind)
         .attr("data-nxt-file-size", e.file_size.to_string())
@@ -1053,6 +1072,7 @@ fn attachment(out: &mut String, e: &Attachment) {
 
 fn typing_indicator(out: &mut String, e: &TypingIndicator) {
     Tag::new("div", "nxt-typing")
+        .props(&e.properties)
         .data_bool("data-nxt-avatars", e.show_avatars)
         .attr("data-nxt-max-display", e.max_display.to_string())
         .text(out, &e.text);
@@ -1060,6 +1080,7 @@ fn typing_indicator(out: &mut String, e: &TypingIndicator) {
 
 fn search_bar(out: &mut String, e: &SearchBar) {
     let outer = Tag::new("div", "nxt-searchbar")
+        .props(&e.properties)
         .data_bool("data-nxt-scope-selector", e.show_scope_selector)
         .data_bool("data-nxt-filters", e.show_filters)
         .data_bool("data-nxt-results-count", e.show_results_count);

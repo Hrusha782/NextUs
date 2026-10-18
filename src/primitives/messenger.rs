@@ -1,3 +1,4 @@
+use crate::properties::Properties;
 use crate::style::{Borders, Colour, Margins, Padding, Size, Style};
 use crate::Element;
 
@@ -10,6 +11,7 @@ pub enum MessageBubbleType {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct MessageBubble {
+    pub properties: Properties,
     pub content: Box<Element>,
     pub message_type: MessageBubbleType,
     pub width: Size,
@@ -33,6 +35,7 @@ pub struct ReactionItem {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Reaction {
+    pub properties: Properties,
     pub reactions: Vec<ReactionItem>,
     pub max_display: usize,
     pub size: f32,
@@ -46,6 +49,7 @@ pub struct Reaction {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Reply {
+    pub properties: Properties,
     pub original_message: Box<Element>,
     pub original_sender: String,
     pub original_text: String,
@@ -70,6 +74,7 @@ pub enum AttachmentType {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Attachment {
+    pub properties: Properties,
     pub file_name: String,
     pub file_size: u64,
     pub file_type: AttachmentType,
@@ -94,6 +99,7 @@ pub struct TypingUser {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TypingIndicator {
+    pub properties: Properties,
     pub users: Vec<TypingUser>,
     pub max_display: usize,
     pub text: String,
@@ -120,6 +126,7 @@ pub struct Filters {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SearchBar {
+    pub properties: Properties,
     pub placeholder: String,
     pub value: String,
     pub search_scope: SearchScope,

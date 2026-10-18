@@ -97,32 +97,20 @@
 
 
 ────────────────────────────────────────────────────────────────────────────
-  ACTIONS — Session
+  ACCOUNT-LEVEL BEHAVIOUR  (not available to .nxt files)
 ────────────────────────────────────────────────────────────────────────────
 
-  logout
-      Logs the current user out and clears all session state.
-      What happens next is entirely up to your design — use data-nxt-navigate
-      on the logout button to go to a login page, or combine with any other
-      action ID to define the post-logout flow.  No automatic navigation occurs.
-      Example:  Button { id: "logout"  text: "⏻"  variant: "Ghost" }
+  Logging out, changing a nickname and checking a password are fixed app
+  behaviours.  The App performs them from its own non-programmable chrome,
+  so they are NOT ids a design or a build can use.
 
-  checkpass
-      Opens a native prompt asking the user to enter their password, then
-      shows whether it is correct.
-      Example:  Button { id: "checkpass"  text: "🔑"  variant: "Ghost" }
+  The names  logout,  checkpass,  nick  and  whoami  are reserved: using any
+  of them as an  id:  is a validation error, as is  action: "logout",
+  action: "change_nick"  or  action: "verify_password".
 
-  whoami
-      Switches to the terminal and prints the logged-in user's nickname and
-      internal user ID.
-      Equivalent terminal command:  whoami
-      Example:  Button { id: "whoami"  text: "Who am I?" }
-
-  nick
-      Switches to the terminal and pre-fills  "nick "  so the user can type
-      a new nickname.
-      Equivalent terminal command:  nick <new_nickname>
-      Example:  Button { id: "nick"  text: "Change name" }
+  Reason: a build is written by one chat owner and rendered by every member
+  of the chat, so an account action placed in a build would act on somebody
+  else's account.  See src/reserved.rs.
 
 
 ────────────────────────────────────────────────────────────────────────────
@@ -244,7 +232,7 @@
   NOTES
 ────────────────────────────────────────────────────────────────────────────
 
-  • IDs that require authentication (whoami, friend-*, chat-*, unread, …) are
+  • IDs that require authentication (friend-*, chat-*, unread, …) are
     silently ignored when no user is logged in because the handler checks
     session state before acting.
 
@@ -255,6 +243,9 @@
     The App processes all of them every time  renderMessenger()  is called.
 
   • Unrecognised IDs are simply ignored — no error is produced.
+
+  • Account-level ids (logout, checkpass, nick, whoami) are reserved and
+    rejected by  nextus --check.  See ACCOUNT-LEVEL BEHAVIOUR above.
 
 ────────────────────────────────────────────────────────────────────────────
   focusAfter PROPERTY  (focus control — works on any element)

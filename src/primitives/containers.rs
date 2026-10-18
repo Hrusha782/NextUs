@@ -1,8 +1,10 @@
+use crate::properties::Properties;
 use crate::style::{Borders, Colour, Margins, Padding, Size};
 use crate::Element;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Part {
+    pub properties: Properties,
     pub child: Box<Element>,
     pub width: Size,
     pub height: Size,
@@ -29,6 +31,7 @@ pub struct TabItem {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Tab {
+    pub properties: Properties,
     pub tabs: Vec<TabItem>,
     pub active_index: usize,
     pub width: Size,
@@ -53,6 +56,7 @@ pub enum TabBarPosition {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Panel {
+    pub properties: Properties,
     pub header: Box<Element>,
     pub content: Box<Element>,
     pub expanded: bool,
@@ -84,6 +88,7 @@ pub enum PopoverPosition {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Popover {
+    pub properties: Properties,
     pub content: Box<Element>,
     pub anchor: Option<(f32, f32)>,
     pub position: PopoverPosition,
@@ -101,6 +106,7 @@ pub struct Popover {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Modal {
+    pub properties: Properties,
     pub content: Box<Element>,
     pub width: Size,
     pub height: Size,

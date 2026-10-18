@@ -98,15 +98,17 @@ Button {
     variant: "Ghost"
     action: "list_friends"
     resultTo: "friends-output"
-    resultFormat: "{nickname}"   -- one nickname per line
+    resultFormat: "{nickname}"   // one nickname per line
 }
 Button { id: "friends-output" text: "" variant: "Ghost" }
 ```
 
+Account-level behaviour (`change_nick`, `verify_password`, `logout`) is **not**
+part of the language — the app performs it from its own chrome, and
+`nextus --check` rejects those names. See `src/reserved.rs`.
+
 | Action | `actionInput` | Result fields | Description |
 |---|---|---|---|
-| `change_nick` | Input ID | status | Change display nickname |
-| `verify_password` | Input ID | status | Check password |
 | `add_friend` | Input ID (user ID) | status | Send friend request |
 | `remove_friend` | Input ID (user ID) | status | Remove friend |
 | `list_friends` | — | `{nickname}` `{id}` | List friends |
@@ -116,15 +118,14 @@ Button { id: "friends-output" text: "" variant: "Ghost" }
 | `unblock_user` | Input ID (user ID) | status | Unblock a user |
 | `list_blocked` | — | `{nickname}` `{id}` | List blocked users |
 | `list_chats` | — | `{name}` `{id}` `{unread}` | List all chats |
-| `logout` | — | — | Log out |
 
 ### Result Formatting
 
 When an action returns a list, `resultFormat` is a `{field}` template applied to each item (newline-separated):
 
 ```nextus
-resultFormat: "{nickname}"              -- nicknames only
-resultFormat: "{nickname} ({id})"       -- nickname + id
+resultFormat: "{nickname}"              // nicknames only
+resultFormat: "{nickname} ({id})"       // nickname + id
 resultFormat: "{name} ({unread} unread)"-- chat name + unread count
 ```
 

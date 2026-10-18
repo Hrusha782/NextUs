@@ -537,6 +537,7 @@ impl Runtime {
         // Match element type and construct
         let element = match element_type {
             "Column" => Element::Column(Column {
+                properties: base_properties.clone(),
                 children: child_elements,
                 spacing: get_f32("spacing", 0.0),
                 alignment: Alignment::Start,
@@ -547,6 +548,7 @@ impl Runtime {
             }),
 
             "Row" => Element::Row(Row {
+                properties: base_properties.clone(),
                 children: child_elements,
                 spacing: get_f32("spacing", 0.0),
                 alignment: Alignment::Start,
@@ -558,6 +560,7 @@ impl Runtime {
             }),
 
             "Container" => Element::Container(Container {
+                properties: base_properties.clone(),
                 children: child_elements,
                 width: Size::Auto,
                 height: Size::Auto,
@@ -575,6 +578,7 @@ impl Runtime {
                     _ => Direction::Vertical,
                 };
                 Element::Stack(Stack {
+                    properties: base_properties.clone(),
                     children: child_elements,
                     direction,
                     spacing: get_f32("spacing", 0.0),
@@ -587,6 +591,7 @@ impl Runtime {
             }
 
             "Grid" => Element::Grid(Grid {
+                properties: base_properties.clone(),
                 children: child_elements,
                 columns: get_f32("columns", 2.0) as usize,
                 rows: None,
@@ -601,6 +606,7 @@ impl Runtime {
             }),
 
             "Spacer" => Element::Spacer(Spacer {
+                properties: base_properties.clone(),
                 width: Size::Auto,
                 height: Size::Auto,
                 grow: props.get("grow").and_then(|v| {
@@ -618,6 +624,7 @@ impl Runtime {
                     _ => Orientation::Horizontal,
                 };
                 Element::Divider(Divider {
+                    properties: base_properties.clone(),
                     orientation,
                     thickness: get_f32("thickness", 1.0),
                     colour: crate::style::Colour::rgb(200, 200, 200),
@@ -797,6 +804,7 @@ impl Runtime {
                     Box::new(child_elements.into_iter().next().unwrap())
                 } else {
                     Box::new(Element::Column(Column {
+                        properties: Properties::default(),
                         children: child_elements,
                         spacing: 0.0,
                         alignment: Alignment::Start,
@@ -808,6 +816,7 @@ impl Runtime {
                 };
 
                 Element::Scroll(Box::new(Scroll {
+                    properties: base_properties.clone(),
                     child,
                     direction,
                     width: Size::Auto,
@@ -825,6 +834,7 @@ impl Runtime {
                     _ => ListOrientation::Vertical,
                 };
                 Element::List(List {
+                    properties: base_properties.clone(),
                     items: child_elements,
                     orientation,
                     item_height: get_f32("item_height", 48.0),
@@ -850,6 +860,7 @@ impl Runtime {
                     Box::new(child_elements.into_iter().next().unwrap())
                 } else {
                     Box::new(Element::Column(Column {
+                        properties: Properties::default(),
                         children: child_elements,
                         spacing: 0.0,
                         alignment: Alignment::Start,
@@ -861,6 +872,7 @@ impl Runtime {
                 };
 
                 Element::Panel(Box::new(Panel {
+                    properties: base_properties.clone(),
                     header,
                     content,
                     expanded: get_bool("expanded", true),
@@ -886,6 +898,7 @@ impl Runtime {
                     _ => TabBarPosition::Top,
                 };
                 Element::Tab(Tab {
+                    properties: base_properties.clone(),
                     tabs: vec![], // Would need special handling for TabItems
                     active_index: get_f32("active_index", 0.0) as usize,
                     width: Size::Auto,
@@ -906,6 +919,7 @@ impl Runtime {
                     Box::new(child_elements.into_iter().next().unwrap())
                 } else {
                     Box::new(Element::Column(Column {
+                        properties: Properties::default(),
                         children: child_elements,
                         spacing: 0.0,
                         alignment: Alignment::Start,
@@ -935,6 +949,7 @@ impl Runtime {
                 let width_val = parse_size("width");
                 let height_val = parse_size("height");
                 Element::Part(Part {
+                    properties: base_properties.clone(),
                     child,
                     width: width_val.map(Size::Fixed).unwrap_or(Size::Auto),
                     height: height_val.map(Size::Fixed).unwrap_or(Size::Auto),
@@ -957,6 +972,7 @@ impl Runtime {
                     Box::new(child_elements.into_iter().next().unwrap())
                 } else {
                     Box::new(Element::Column(Column {
+                        properties: Properties::default(),
                         children: child_elements,
                         spacing: 0.0,
                         alignment: Alignment::Start,
@@ -968,6 +984,7 @@ impl Runtime {
                 };
 
                 Element::Modal(Modal {
+                    properties: base_properties.clone(),
                     content,
                     width: Size::Auto,
                     height: Size::Auto,
@@ -1001,6 +1018,7 @@ impl Runtime {
                     Box::new(child_elements.into_iter().next().unwrap())
                 } else {
                     Box::new(Element::Column(Column {
+                        properties: Properties::default(),
                         children: child_elements,
                         spacing: 0.0,
                         alignment: Alignment::Start,
@@ -1012,6 +1030,7 @@ impl Runtime {
                 };
 
                 Element::Popover(Popover {
+                    properties: base_properties.clone(),
                     content,
                     anchor: None,
                     position,
@@ -1038,6 +1057,7 @@ impl Runtime {
                     Box::new(child_elements.into_iter().next().unwrap())
                 } else {
                     Box::new(Element::Column(Column {
+                        properties: Properties::default(),
                         children: child_elements,
                         spacing: 0.0,
                         alignment: Alignment::Start,
@@ -1048,6 +1068,7 @@ impl Runtime {
                     }))
                 };
                 Element::MessageBubble(MessageBubble {
+                    properties: base_properties.clone(),
                     content,
                     message_type,
                     width: Size::Auto,
@@ -1064,6 +1085,7 @@ impl Runtime {
             }
 
             "Reaction" => Element::Reaction(Reaction {
+                properties: base_properties.clone(),
                 reactions: vec![],
                 max_display: get_f32("max_display", 5.0) as usize,
                 size: get_f32("size", 20.0),
@@ -1086,6 +1108,7 @@ impl Runtime {
                     }))
                 };
                 Element::Reply(Reply {
+                    properties: base_properties.clone(),
                     original_message: original,
                     original_sender: get_string("original_sender", ""),
                     original_text: get_string("original_text", ""),
@@ -1109,6 +1132,7 @@ impl Runtime {
                     _ => AttachmentType::Other,
                 };
                 Element::Attachment(Attachment {
+                    properties: base_properties.clone(),
                     file_name: get_string("file_name", ""),
                     file_size: get_f32("file_size", 0.0) as u64,
                     file_type,
@@ -1127,6 +1151,7 @@ impl Runtime {
             }
 
             "TypingIndicator" => Element::TypingIndicator(TypingIndicator {
+                properties: base_properties.clone(),
                 users: vec![],
                 max_display: get_f32("max_display", 3.0) as usize,
                 text: get_string("text", "is typing..."),
@@ -1135,6 +1160,7 @@ impl Runtime {
             }),
 
             "SearchBar" => Element::SearchBar(SearchBar {
+                properties: base_properties.clone(),
                 placeholder: get_string("placeholder", "Search..."),
                 value: get_string("value", ""),
                 search_scope: SearchScope::All,
@@ -1154,6 +1180,7 @@ impl Runtime {
             }),
 
             "MessageList" => Element::MessageList(MessageList {
+                properties: base_properties.clone(),
                 messages: child_elements
                     .into_iter()
                     .enumerate()

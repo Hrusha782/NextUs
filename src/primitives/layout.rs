@@ -1,3 +1,4 @@
+use crate::properties::Properties;
 use crate::style::{Alignment, Borders, Colour, Margins, Padding, Size};
 use crate::Element;
 
@@ -15,6 +16,7 @@ pub enum Orientation {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Container {
+    pub properties: Properties,
     pub children: Vec<Element>,
     pub width: Size,
     pub height: Size,
@@ -28,6 +30,7 @@ pub struct Container {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Row {
+    pub properties: Properties,
     pub children: Vec<Element>,
     pub spacing: f32,
     pub alignment: Alignment,
@@ -40,6 +43,7 @@ pub struct Row {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Column {
+    pub properties: Properties,
     pub children: Vec<Element>,
     pub spacing: f32,
     pub alignment: Alignment,
@@ -51,6 +55,7 @@ pub struct Column {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Stack {
+    pub properties: Properties,
     pub children: Vec<Element>,
     pub direction: Direction,
     pub spacing: f32,
@@ -63,6 +68,7 @@ pub struct Stack {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Grid {
+    pub properties: Properties,
     pub children: Vec<Element>,
     pub columns: usize,
     pub rows: Option<usize>,
@@ -78,6 +84,7 @@ pub struct Grid {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Spacer {
+    pub properties: Properties,
     pub width: Size,
     pub height: Size,
     pub grow: Option<f32>,
@@ -85,6 +92,7 @@ pub struct Spacer {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Divider {
+    pub properties: Properties,
     pub orientation: Orientation,
     pub thickness: f32,
     pub colour: Colour,

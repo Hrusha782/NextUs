@@ -762,6 +762,52 @@ mod html_tests {
         assert!(out.contains(r#"data-nxt-format="relative""#), "{}", out);
     }
 
+    /// Every primitive carries `Properties`, so an `id:` is never dropped --
+    /// `DESIGN_IDS.txt` promises that any element type works.
+    #[test]
+    fn every_element_keeps_its_id() {
+        use crate::element::ELEMENT_NAMES;
+
+        for name in ELEMENT_NAMES {
+            let source = format!(
+                "state {{}}\nview {{ {} {{ id: \"kept\" }} }}\nupdate {{}}",
+                name
+            );
+            let out = html(&source);
+            assert!(
+                out.contains(r#"data-nxt-id="kept""#),
+                "{} dropped its id: {}",
+                name,
+                out
+            );
+        }
+    }
+
+    /// A container the runtime invents to hold several children is not the
+    /// program's element and must not repeat its id.
+    #[test]
+    fn synthetic_wrapper_does_not_repeat_the_id() {
+        let out = html(
+            r#"
+            state {}
+            view {
+                Scroll {
+                    id: "sc"
+                    Text { content: "a" }
+                    Text { content: "b" }
+                }
+            }
+            update {}
+        "#,
+        );
+        assert_eq!(
+            out.matches(r#"data-nxt-id="sc""#).count(),
+            1,
+            "id appeared more than once: {}",
+            out
+        );
+    }
+
     #[test]
     fn message_bubble_carries_the_class_the_app_listens_on() {
         let out = html(
@@ -824,5 +870,77 @@ mod properties_tests {
             Properties::default().with_id("send").id,
             Some("send".to_string())
         );
+    }
+}
+
+mod reserved_tests {
+    use crate::parser;
+    use crate::reserved::{RESERVED_ACTIONS, RESERVED_IDS};
+
+    fn validate(source: &str) -> Result<(), String> {
+        let program = parser::parse(source).unwrap();
+        crate::parser::syntax::validate_program(&program)
+    }
+
+    /// Account-level actions are app behaviour, not language surface. A build
+    /// is rendered by every member of a chat, so one of these in a build would
+    /// act on somebody else's account.
+    #[test]
+    fn reserved_actions_are_rejected() {
+        for action in RESERVED_ACTIONS {
+            let source = format!(
+                "state {{}}\nview {{ Button {{ id: \"b\"  text: \"x\"  action: \"{}\" }} }}\nupdate {{}}",
+                action
+            );
+            let err = validate(&source).expect_err(&format!(
+                "'{}' is reserved but validation accepted it",
+                action
+            ));
+            assert!(
+                err.contains(action),
+                "error should name the action: {}",
+                err
+            );
+        }
+    }
+
+    #[test]
+    fn reserved_ids_are_rejected() {
+        for id in RESERVED_IDS {
+            let source = format!(
+                "state {{}}\nview {{ Button {{ id: \"{}\"  text: \"x\" }} }}\nupdate {{}}",
+                id
+            );
+            let err = validate(&source)
+                .expect_err(&format!("'{}' is reserved but validation accepted it", id));
+            assert!(err.contains(id), "error should name the id: {}", err);
+        }
+    }
+
+    /// The restriction is narrow: everything else still works.
+    #[test]
+    fn ordinary_actions_and_ids_still_pass() {
+        let source = r#"
+            state {}
+            view {
+                Column {
+                    Button { id: "send"  text: "Send" }
+                    Button { id: "friend-add"  text: "Add"  action: "add_friend" }
+                }
+            }
+            update {}
+        "#;
+        assert!(validate(source).is_ok(), "{:?}", validate(source));
+    }
+
+    /// A reserved name must not slip through on a nested element either.
+    #[test]
+    fn reserved_names_are_caught_when_nested() {
+        let source = r#"
+            state {}
+            view { Column { Row { Button { id: "logout"  text: "x" } } } }
+            update {}
+        "#;
+        assert!(validate(source).is_err());
     }
 }

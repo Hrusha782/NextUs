@@ -170,7 +170,7 @@ NextUs/
 - ✅ `render_html()` emits HTML tagged with `data-nxt-id` for the host app
 - ✅ Text and attributes escaped; output deterministic and compact
 - ✅ `nextus --html <file.nxt>` prints the markup
-- 🚧 Layout primitives carry no `Properties`, so they cannot have an `id`
+- ✅ All 32 primitives carry `Properties`, so an `id:` is never dropped
 
 There is no GPU or canvas backend and none is planned: the host app owns
 painting. [`src/renderer/`](src/renderer/) also holds an early layout engine

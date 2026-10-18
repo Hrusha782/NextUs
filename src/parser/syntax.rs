@@ -196,6 +196,31 @@ pub fn format_expr(expr: &Expr) -> String {
     }
 }
 
+/// Reject `action:` and `id:` values the app reserves for itself.
+///
+/// Only literal strings can be checked here; a value computed at runtime is
+/// not visible to validation. See `src/reserved.rs` for why these names are
+/// not part of the language.
+fn validate_reserved_name(property: &str, value: &Expr) -> Result<(), String> {
+    let Expr::String(literal) = value else {
+        return Ok(());
+    };
+
+    let reason = match property {
+        "action" => crate::reserved::reserved_action_reason(literal),
+        "id" => crate::reserved::reserved_id_reason(literal),
+        _ => None,
+    };
+
+    match reason {
+        Some(reason) => Err(format!(
+            "'{}' cannot be used as {}: {}.",
+            literal, property, reason
+        )),
+        None => Ok(()),
+    }
+}
+
 /// Walk an expression tree and reject any element the runtime cannot build.
 ///
 /// Without this, a typo or a non-programmable name like `TopBar` passes
@@ -213,7 +238,8 @@ fn validate_elements(expr: &Expr) -> Result<(), String> {
                     element_type
                 ));
             }
-            for (_, value) in properties {
+            for (name, value) in properties {
+                validate_reserved_name(name, value)?;
                 validate_elements(value)?;
             }
             for child in children {
