@@ -10,7 +10,7 @@ mod parser_tests {
             view { Text { content: "Hello" } }
             update {}
         "#;
-        
+
         let result = parser::parse(source);
         assert!(result.is_ok(), "Failed to parse: {:?}", result.err());
     }
@@ -26,10 +26,10 @@ mod parser_tests {
             view { Text { content: "Hello" } }
             update {}
         "#;
-        
+
         let result = parser::parse(source);
         assert!(result.is_ok(), "Failed to parse: {:?}", result.err());
-        
+
         let program = result.unwrap();
         assert_eq!(program.state.len(), 3);
     }
@@ -47,7 +47,7 @@ mod parser_tests {
             }
             update {}
         "#;
-        
+
         let result = parser::parse(source);
         assert!(result.is_ok(), "Failed to parse: {:?}", result.err());
     }
@@ -65,10 +65,10 @@ mod parser_tests {
                 }
             }
         "#;
-        
+
         let result = parser::parse(source);
         assert!(result.is_ok(), "Failed to parse: {:?}", result.err());
-        
+
         let program = result.unwrap();
         assert_eq!(program.update.len(), 1);
     }
@@ -86,11 +86,11 @@ mod runtime_tests {
             view { Text { content: "Hello" } }
             update {}
         "#;
-        
+
         let program = parser::parse(source).unwrap();
         let limits = RuntimeLimits::default();
         let result = Runtime::new(program, limits);
-        
+
         assert!(result.is_ok(), "Runtime init failed: {:?}", result.err());
     }
 
@@ -167,7 +167,10 @@ mod runtime_tests {
             update {}
         "#;
         let program = parser::parse(source).unwrap();
-        let limits = RuntimeLimits { max_text_length: 8, ..RuntimeLimits::default() };
+        let limits = RuntimeLimits {
+            max_text_length: 8,
+            ..RuntimeLimits::default()
+        };
         let runtime = Runtime::new(program, limits).unwrap();
 
         match runtime.render() {
@@ -266,15 +269,21 @@ update {{}}",
         use crate::runtime::RuntimeError;
 
         for name in ELEMENT_NAMES {
-            let source = format!("state {{}}
+            let source = format!(
+                "state {{}}
 view {{ {} {{ }} }}
-update {{}}", name);
+update {{}}",
+                name
+            );
             let program = parser::parse(&source)
                 .unwrap_or_else(|e| panic!("{} failed to parse: {:?}", name, e));
             let runtime = Runtime::new(program, RuntimeLimits::default()).unwrap();
 
             if let Err(RuntimeError::UnknownElement(unknown)) = runtime.render() {
-                panic!("'{}' is in ELEMENT_NAMES but the runtime cannot build it", unknown);
+                panic!(
+                    "'{}' is in ELEMENT_NAMES but the runtime cannot build it",
+                    unknown
+                );
             }
         }
     }
@@ -287,10 +296,10 @@ mod state_tests {
     fn test_state_set_and_get() {
         let state = State::new();
         let state = state.set("count".to_string(), Value::Number(42.0));
-        
+
         let value = state.get("count");
         assert!(value.is_some());
-        
+
         if let Some(Value::Number(n)) = value {
             assert_eq!(*n, 42.0);
         } else {
@@ -302,7 +311,7 @@ mod state_tests {
     fn test_state_immutability() {
         let state1 = State::new();
         let state2 = state1.set("x".to_string(), Value::Number(1.0));
-        
+
         // Original state should be unchanged
         assert!(state1.get("x").is_none());
         assert!(state2.get("x").is_some());
@@ -310,12 +319,12 @@ mod state_tests {
 }
 
 mod renderer_tests {
-    use crate::renderer::{Rect, Constraints, MemoryTracker};
+    use crate::renderer::{Constraints, MemoryTracker, Rect};
 
     #[test]
     fn test_rect_contains() {
         let rect = Rect::new(10.0, 10.0, 100.0, 50.0);
-        
+
         assert!(rect.contains(50.0, 30.0)); // Inside
         assert!(!rect.contains(5.0, 30.0)); // Left of
         assert!(!rect.contains(50.0, 5.0)); // Above
@@ -326,7 +335,7 @@ mod renderer_tests {
         let rect1 = Rect::new(0.0, 0.0, 100.0, 100.0);
         let rect2 = Rect::new(50.0, 50.0, 100.0, 100.0);
         let rect3 = Rect::new(200.0, 200.0, 50.0, 50.0);
-        
+
         assert!(rect1.intersects(&rect2)); // Overlapping
         assert!(!rect1.intersects(&rect3)); // No overlap
     }
@@ -334,7 +343,7 @@ mod renderer_tests {
     #[test]
     fn test_constraints() {
         let constraints = Constraints::new(0.0, 100.0, 0.0, 50.0);
-        
+
         let (w, h) = constraints.constrain(200.0, 75.0);
         assert_eq!(w, 100.0); // Clamped to max
         assert_eq!(h, 50.0); // Clamped to max
@@ -343,13 +352,17 @@ mod renderer_tests {
     #[test]
     fn test_memory_tracker() {
         let mut tracker = MemoryTracker::new();
-        
-        tracker.allocate("element_1".to_string(), 1024, "test".to_string()).unwrap();
-        tracker.allocate("element_2".to_string(), 2048, "test".to_string()).unwrap();
-        
+
+        tracker
+            .allocate("element_1".to_string(), 1024, "test".to_string())
+            .unwrap();
+        tracker
+            .allocate("element_2".to_string(), 2048, "test".to_string())
+            .unwrap();
+
         assert_eq!(tracker.stats().current_usage, 3072);
         assert_eq!(tracker.stats().allocation_count, 2);
-        
+
         tracker.free("element_1").unwrap();
         assert_eq!(tracker.stats().current_usage, 2048);
     }
@@ -381,7 +394,11 @@ mod validation_tests {
             update {}
         "#;
         let err = validate(source).expect_err("Foo is not a primitive");
-        assert!(err.contains("Foo"), "error should name the element: {}", err);
+        assert!(
+            err.contains("Foo"),
+            "error should name the element: {}",
+            err
+        );
     }
 
     /// The app's top bar and left rail are never programmable, so `TopBar`
@@ -394,7 +411,11 @@ mod validation_tests {
             update {}
         "#;
         let err = validate(source).expect_err("TopBar must not be programmable");
-        assert!(err.contains("TopBar"), "error should name the element: {}", err);
+        assert!(
+            err.contains("TopBar"),
+            "error should name the element: {}",
+            err
+        );
     }
 
     #[test]

@@ -1,4 +1,4 @@
-use crate::style::{Size, Padding, Colour, Alignment};
+use crate::style::{Alignment, Colour, Padding, Size};
 use crate::Element;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -12,7 +12,7 @@ pub enum ScrollDirection {
 pub enum ScrollBarVisibility {
     Always,
     Hover,
-    Auto,      
+    Auto,
     Never,
 }
 
@@ -35,7 +35,7 @@ pub struct Scroll {
     pub height: Size,
     pub padding: Padding,
     pub scrollbar: ScrollBar,
-    pub snap_to_bottom: bool,       
+    pub snap_to_bottom: bool,
     pub smooth_scroll: bool,
 }
 
@@ -49,8 +49,8 @@ pub enum ListOrientation {
 pub struct List {
     pub items: Vec<Element>,
     pub orientation: ListOrientation,
-    pub item_height: f32,             
-    pub spacing: f32,                
+    pub item_height: f32,
+    pub spacing: f32,
     pub width: Size,
     pub height: Size,
     pub padding: Padding,
@@ -62,8 +62,18 @@ impl Default for ScrollBar {
     fn default() -> Self {
         Self {
             width: 8.0,
-            colour: Colour { r: 128, g: 128, b: 128, a: 200 },
-            background_colour: Colour { r: 240, g: 240, b: 240, a: 100 },
+            colour: Colour {
+                r: 128,
+                g: 128,
+                b: 128,
+                a: 200,
+            },
+            background_colour: Colour {
+                r: 240,
+                g: 240,
+                b: 240,
+                a: 100,
+            },
             border_radius: 4.0,
             visibility: ScrollBarVisibility::Auto,
             visible_range: None,
@@ -90,7 +100,7 @@ pub struct MessageList {
     pub spacing: f32,
     pub group_spacing: f32,
     pub group_threshold: i64,
-    pub scrollbar: ScrollBar, 
+    pub scrollbar: ScrollBar,
     pub auto_scroll: bool,
     pub scroll_threshold: f32,
     pub show_timestamps: bool,

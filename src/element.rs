@@ -1,9 +1,9 @@
-use crate::primitives::content::*;
-use crate::primitives::layout::*;
-use crate::primitives::input::*;
-use crate::primitives::scrolling::*;
 use crate::primitives::containers::*;
+use crate::primitives::content::*;
+use crate::primitives::input::*;
+use crate::primitives::layout::*;
 use crate::primitives::messenger::*;
+use crate::primitives::scrolling::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Element {
@@ -56,14 +56,38 @@ pub enum Element {
 /// Deliberately absent: `TopBar` and the left rail. Those are app chrome and
 /// must never be programmable from a design or a build.
 pub const ELEMENT_NAMES: &[&str] = &[
-    "Attachment", "Avatar", "Badge", "Button",
-    "Checkbox", "Column", "Container", "Divider",
-    "Dropdown", "Grid", "Image", "Input",
-    "List", "MessageBubble", "MessageList", "Modal",
-    "Panel", "Part", "Popover", "Reaction",
-    "Reply", "Row", "Scroll", "SearchBar",
-    "Spacer", "Stack", "Status", "Tab",
-    "Text", "Timestamp", "Tooltip", "TypingIndicator",
+    "Attachment",
+    "Avatar",
+    "Badge",
+    "Button",
+    "Checkbox",
+    "Column",
+    "Container",
+    "Divider",
+    "Dropdown",
+    "Grid",
+    "Image",
+    "Input",
+    "List",
+    "MessageBubble",
+    "MessageList",
+    "Modal",
+    "Panel",
+    "Part",
+    "Popover",
+    "Reaction",
+    "Reply",
+    "Row",
+    "Scroll",
+    "SearchBar",
+    "Spacer",
+    "Stack",
+    "Status",
+    "Tab",
+    "Text",
+    "Timestamp",
+    "Tooltip",
+    "TypingIndicator",
 ];
 
 /// Whether `name` is an element the runtime can build.

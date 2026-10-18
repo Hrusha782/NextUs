@@ -1,4 +1,4 @@
-use crate::style::{Size, Padding, Margins, Colour, Borders, Style}; 
+use crate::style::{Borders, Colour, Margins, Padding, Size, Style};
 use crate::Element;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -34,20 +34,20 @@ pub struct ReactionItem {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Reaction {
     pub reactions: Vec<ReactionItem>,
-    pub max_display: usize,          
-    pub size: f32,                   
-    pub spacing: f32,                
-    pub padding: Padding,            
+    pub max_display: usize,
+    pub size: f32,
+    pub spacing: f32,
+    pub padding: Padding,
     pub background_colour: Colour,
     pub active_background: Colour,
     pub borders: Borders,
-    pub show_count: bool,      
-}    
+    pub show_count: bool,
+}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Reply {
     pub original_message: Box<Element>,
-    pub original_sender: String,    
+    pub original_sender: String,
     pub original_text: String,
     pub max_preview_length: usize,
     pub width: Size,
@@ -103,34 +103,33 @@ pub struct TypingIndicator {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SearchScope {
-    All,          
-    CurrentChat,   
+    All,
+    CurrentChat,
     User,
-    Select,          
+    Select,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Filters {
-    pub date_from: Option<i64>,    
+    pub date_from: Option<i64>,
     pub date_to: Option<i64>,
-    pub sender: Option<String>,     
+    pub sender: Option<String>,
     pub has_attachments: bool,
-    pub has_reactions: bool, 
+    pub has_reactions: bool,
 }
-
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SearchBar {
-    pub placeholder: String,       
-    pub value: String,             
+    pub placeholder: String,
+    pub value: String,
     pub search_scope: SearchScope,
     pub filters: Filters,
     pub styling: Style,
-    pub show_scope_selector: bool,  
-    pub show_filters: bool,        
-    pub show_results_count: bool,  
-    pub results_count: usize,   
-    pub icon: Option<Box<Element>>,   
+    pub show_scope_selector: bool,
+    pub show_filters: bool,
+    pub show_results_count: bool,
+    pub results_count: usize,
+    pub icon: Option<Box<Element>>,
 }
 
 impl Default for MessageBubbleType {

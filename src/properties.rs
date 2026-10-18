@@ -1,9 +1,9 @@
 #[derive(Debug, Clone, PartialEq)]
 pub struct Properties {
-    pub id: Option<String>,     
-    pub class: Vec<String>,        
+    pub id: Option<String>,
+    pub class: Vec<String>,
     pub visible: bool,
-    pub enabled: bool,            
+    pub enabled: bool,
     pub focusable: bool,
     pub draggable: bool,
     /// After the user interacts with this element, the App moves keyboard focus
@@ -63,7 +63,10 @@ impl Properties {
     }
 
     pub fn with_id(self, id: impl Into<String>) -> Self {
-        Self { id: Some(id.into()), ..self }
+        Self {
+            id: Some(id.into()),
+            ..self
+        }
     }
 
     pub fn with_class(mut self, class: impl Into<String>) -> Self {
@@ -88,7 +91,10 @@ impl Properties {
     }
 
     pub fn with_focus_after(self, focus_after: Option<String>) -> Self {
-        Self { focus_after, ..self }
+        Self {
+            focus_after,
+            ..self
+        }
     }
 
     pub fn with_navigate(self, navigate: Option<String>) -> Self {
@@ -100,7 +106,10 @@ impl Properties {
     }
 
     pub fn with_action_input(self, action_input: Option<String>) -> Self {
-        Self { action_input, ..self }
+        Self {
+            action_input,
+            ..self
+        }
     }
 
     pub fn with_result_to(self, result_to: Option<String>) -> Self {
@@ -108,6 +117,9 @@ impl Properties {
     }
 
     pub fn with_result_format(self, result_format: Option<String>) -> Self {
-        Self { result_format, ..self }
+        Self {
+            result_format,
+            ..self
+        }
     }
 }

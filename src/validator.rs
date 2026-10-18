@@ -1,4 +1,4 @@
-use crate::ast::{Program, Expr};
+use crate::ast::{Expr, Program};
 use crate::limits::{RuntimeLimits, ValidationError};
 
 /// Validates a parsed program against runtime limits before execution.
@@ -6,7 +6,11 @@ pub fn validate(program: &Program, limits: &RuntimeLimits) -> Result<(), Validat
     validate_view_expr(&program.view.body, limits, 0)
 }
 
-fn validate_view_expr(expr: &Expr, limits: &RuntimeLimits, depth: usize) -> Result<(), ValidationError> {
+fn validate_view_expr(
+    expr: &Expr,
+    limits: &RuntimeLimits,
+    depth: usize,
+) -> Result<(), ValidationError> {
     limits.validate_depth(depth)?;
 
     match expr {
@@ -28,7 +32,11 @@ fn validate_view_expr(expr: &Expr, limits: &RuntimeLimits, depth: usize) -> Resu
             }
         }
 
-        Expr::If { condition, then_branch, else_branch } => {
+        Expr::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             validate_view_expr(condition, limits, depth + 1)?;
             validate_view_expr(then_branch, limits, depth + 1)?;
             if let Some(else_b) = else_branch {

@@ -1,5 +1,5 @@
 //! Memory Tracker for NextUs
-//! 
+//!
 //! Tracks memory allocations and provides statistics for debugging and optimization.
 
 use std::collections::HashMap;
@@ -79,7 +79,12 @@ impl MemoryTracker {
     }
 
     /// Record a new allocation
-    pub fn allocate(&mut self, id: String, size_bytes: usize, source: String) -> Result<(), MemoryError> {
+    pub fn allocate(
+        &mut self,
+        id: String,
+        size_bytes: usize,
+        source: String,
+    ) -> Result<(), MemoryError> {
         // Check if allocation would exceed limit
         if let Some(limit) = self.limit_bytes {
             if self.stats.current_usage + size_bytes > limit {
@@ -107,8 +112,11 @@ impl MemoryTracker {
 
     /// Record a deallocation
     pub fn free(&mut self, id: &str) -> Result<usize, MemoryError> {
-        let info = self.allocations.remove(id).ok_or(MemoryError::NotFound(id.to_string()))?;
-        
+        let info = self
+            .allocations
+            .remove(id)
+            .ok_or(MemoryError::NotFound(id.to_string()))?;
+
         self.stats.total_freed += info.size_bytes;
         self.stats.current_usage -= info.size_bytes;
         self.stats.free_count += 1;
@@ -177,7 +185,8 @@ impl MemoryTracker {
 
     /// Get available memory (if limit is set)
     pub fn available(&self) -> Option<usize> {
-        self.limit_bytes.map(|limit| limit.saturating_sub(self.stats.current_usage))
+        self.limit_bytes
+            .map(|limit| limit.saturating_sub(self.stats.current_usage))
     }
 }
 
@@ -201,7 +210,11 @@ pub enum MemoryError {
 impl std::fmt::Display for MemoryError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MemoryError::LimitExceeded { requested, available, limit } => {
+            MemoryError::LimitExceeded {
+                requested,
+                available,
+                limit,
+            } => {
                 write!(
                     f,
                     "Memory limit exceeded: requested {} bytes, {} available (limit: {})",

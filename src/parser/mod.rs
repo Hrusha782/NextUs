@@ -1,11 +1,11 @@
 pub mod lexer;
 pub mod syntax;
 
-pub use lexer::{Token, Lexer, LexError};
+pub use lexer::{LexError, Lexer, Token};
 
 use crate::ast::{
-    Program, StateDecl, ViewDecl, UpdateRule, MessagePattern, StyleRule, StyleSelector,
-    Expr, BinaryOperator, UnaryOperator, Type,
+    BinaryOperator, Expr, MessagePattern, Program, StateDecl, StyleRule, StyleSelector, Type,
+    UnaryOperator, UpdateRule, ViewDecl,
 };
 use std::collections::HashMap;
 
@@ -49,7 +49,10 @@ pub struct Parser {
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, position: 0 }
+        Self {
+            tokens,
+            position: 0,
+        }
     }
 
     pub fn parse_program(&mut self) -> Result<Program, ParseError> {
@@ -115,22 +118,21 @@ impl Parser {
 
         // Optional type annotation: `name: Type = value`
         // Detect by checking if the next two tokens are Identifier then Equal.
-        let var_type = if matches!(self.current(), Token::Identifier(_))
-            && self.peek_is(&Token::Equal)
-        {
-            let type_name = self.expect_identifier()?;
-            self.expect(Token::Equal)?;
-            let t = match type_name.as_str() {
-                "String" | "Str" => Type::String,
-                "Number" | "Int" | "Float" | "f64" | "i64" | "i32" | "u32" => Type::Number,
-                "Boolean" | "Bool" | "bool" => Type::Boolean,
-                "Element" => Type::Element,
-                _ => Type::Any,
+        let var_type =
+            if matches!(self.current(), Token::Identifier(_)) && self.peek_is(&Token::Equal) {
+                let type_name = self.expect_identifier()?;
+                self.expect(Token::Equal)?;
+                let t = match type_name.as_str() {
+                    "String" | "Str" => Type::String,
+                    "Number" | "Int" | "Float" | "f64" | "i64" | "i32" | "u32" => Type::Number,
+                    "Boolean" | "Bool" | "bool" => Type::Boolean,
+                    "Element" => Type::Element,
+                    _ => Type::Any,
+                };
+                Some(t)
+            } else {
+                None
             };
-            Some(t)
-        } else {
-            None
-        };
 
         let initial_value = self.parse_expr()?;
 
@@ -157,7 +159,11 @@ impl Parser {
             let val = match val_expr {
                 Expr::String(s) => s,
                 Expr::Number(n) => {
-                    if n == n.floor() { format!("{}", n as i64) } else { format!("{n}") }
+                    if n == n.floor() {
+                        format!("{}", n as i64)
+                    } else {
+                        format!("{n}")
+                    }
                 }
                 _ => String::new(),
             };
@@ -291,7 +297,12 @@ impl Parser {
                     match field.as_str() {
                         "id" => id = self.expect_string()?,
                         "value" => value_var = Some(self.expect_identifier()?),
-                        _ => return Err(ParseError::InvalidPattern(format!("Unknown field in InputChanged: {}", field)))
+                        _ => {
+                            return Err(ParseError::InvalidPattern(format!(
+                                "Unknown field in InputChanged: {}",
+                                field
+                            )))
+                        }
                     }
 
                     if self.check(&Token::Comma) {
@@ -321,9 +332,13 @@ impl Parser {
                     match field.as_str() {
                         "id" => id = self.expect_string()?,
                         "checked" => _checked_var = Some(self.expect_identifier()?),
-                        _ => { self.parse_expr()?; }
+                        _ => {
+                            self.parse_expr()?;
+                        }
                     }
-                    if self.check(&Token::Comma) { self.advance(); }
+                    if self.check(&Token::Comma) {
+                        self.advance();
+                    }
                 }
                 self.expect(Token::RBrace)?;
                 Ok(MessagePattern::Clicked { id }) // reuse Clicked — runtime handles toggle
@@ -339,9 +354,13 @@ impl Parser {
                     match field.as_str() {
                         "id" => id = self.expect_string()?,
                         "value" => value_var = Some(self.expect_identifier()?),
-                        _ => { self.parse_expr()?; }
+                        _ => {
+                            self.parse_expr()?;
+                        }
                     }
-                    if self.check(&Token::Comma) { self.advance(); }
+                    if self.check(&Token::Comma) {
+                        self.advance();
+                    }
                 }
                 self.expect(Token::RBrace)?;
                 Ok(MessagePattern::InputChanged { id, value_var })
@@ -357,9 +376,13 @@ impl Parser {
                     match field.as_str() {
                         "id" => id = self.expect_string()?,
                         "key" => value_var = Some(self.expect_identifier()?),
-                        _ => { self.parse_expr()?; }
+                        _ => {
+                            self.parse_expr()?;
+                        }
                     }
-                    if self.check(&Token::Comma) { self.advance(); }
+                    if self.check(&Token::Comma) {
+                        self.advance();
+                    }
                 }
                 self.expect(Token::RBrace)?;
                 Ok(MessagePattern::InputChanged { id, value_var })
@@ -375,9 +398,13 @@ impl Parser {
                     match field.as_str() {
                         "id" => id = self.expect_string()?,
                         "position" => value_var = Some(self.expect_identifier()?),
-                        _ => { self.parse_expr()?; }
+                        _ => {
+                            self.parse_expr()?;
+                        }
                     }
-                    if self.check(&Token::Comma) { self.advance(); }
+                    if self.check(&Token::Comma) {
+                        self.advance();
+                    }
                 }
                 self.expect(Token::RBrace)?;
                 Ok(MessagePattern::InputChanged { id, value_var })
@@ -404,12 +431,19 @@ impl Parser {
                             _id_field = "id".to_string();
                             value_var = Some(self.expect_identifier()?);
                         }
-                        _ => { self.parse_expr()?; }
+                        _ => {
+                            self.parse_expr()?;
+                        }
                     }
-                    if self.check(&Token::Comma) { self.advance(); }
+                    if self.check(&Token::Comma) {
+                        self.advance();
+                    }
                 }
                 self.expect(Token::RBrace)?;
-                Ok(MessagePattern::InputChanged { id: "chat-list".to_string(), value_var })
+                Ok(MessagePattern::InputChanged {
+                    id: "chat-list".to_string(),
+                    value_var,
+                })
             }
             // No-field chat events
             "MessageDeleted" | "MessageEdited" | "ReactionAdded" | "ReactionRemoved"
@@ -421,7 +455,9 @@ impl Parser {
                         let _field = self.expect_identifier()?;
                         self.expect(Token::Colon)?;
                         self.parse_expr()?;
-                        if self.check(&Token::Comma) { self.advance(); }
+                        if self.check(&Token::Comma) {
+                            self.advance();
+                        }
                     }
                     self.expect(Token::RBrace)?;
                 }
@@ -476,7 +512,10 @@ impl Parser {
         }
 
         self.expect(Token::RBrace)?;
-        Ok(StyleRule { selector, properties })
+        Ok(StyleRule {
+            selector,
+            properties,
+        })
     }
 
     fn parse_style_rule(&mut self) -> Result<StyleRule, ParseError> {
@@ -509,9 +548,9 @@ impl Parser {
         match self.current().clone() {
             Token::Hash => {
                 self.advance(); // skip '#'
-                // IDs may contain hyphens (e.g. `#close-chat`, `#my-profile`).
-                // The lexer stops identifier scanning at '-', so we stitch the
-                // parts together: Identifier (Minus Identifier)*.
+                                // IDs may contain hyphens (e.g. `#close-chat`, `#my-profile`).
+                                // The lexer stops identifier scanning at '-', so we stitch the
+                                // parts together: Identifier (Minus Identifier)*.
                 let mut id_name = self.expect_identifier()?;
                 while self.check(&Token::Minus) {
                     // Peek ahead: only continue if the token after '-' is an identifier.
@@ -545,7 +584,8 @@ impl Parser {
                 }
             }
             _ => Err(ParseError::UnexpectedToken {
-                expected: "style selector (ElementName, ElementName.Variant, #id, or .class)".to_string(),
+                expected: "style selector (ElementName, ElementName.Variant, #id, or .class)"
+                    .to_string(),
                 found: self.current().clone(),
             }),
         }
@@ -776,7 +816,12 @@ impl Parser {
 
                 if self.check(&Token::LBrace) && name.chars().next().unwrap_or('a').is_uppercase() {
                     self.parse_element(name)
-                } else if name.chars().next().map(|c| c.is_uppercase()).unwrap_or(false) {
+                } else if name
+                    .chars()
+                    .next()
+                    .map(|c| c.is_uppercase())
+                    .unwrap_or(false)
+                {
                     // Uppercase bare identifier = enum/variant literal (Primary, Online, Vertical…)
                     Ok(Expr::String(name))
                 } else {
@@ -855,13 +900,19 @@ impl Parser {
                     self.advance(); // consume colon
                     let value = self.parse_expr()?;
                     properties.push((name, value));
-                    if self.check(&Token::Comma) { self.advance(); }
+                    if self.check(&Token::Comma) {
+                        self.advance();
+                    }
                     continue;
                 }
                 // Inline block property: lowercase name followed by { }
                 // e.g. `style { fontSize: 18  fontWeight: Bold }` — no commas required
                 if self.peek_is(&Token::LBrace)
-                    && name.chars().next().map(|c| c.is_lowercase()).unwrap_or(false)
+                    && name
+                        .chars()
+                        .next()
+                        .map(|c| c.is_lowercase())
+                        .unwrap_or(false)
                 {
                     self.advance(); // consume name
                     self.advance(); // consume LBrace
@@ -871,7 +922,9 @@ impl Parser {
                         self.expect(Token::Colon)?;
                         let val = self.parse_expr()?;
                         fields.push((key, val));
-                        if self.check(&Token::Comma) { self.advance(); }
+                        if self.check(&Token::Comma) {
+                            self.advance();
+                        }
                         // newline-separated fields need no comma — just continue the loop
                     }
                     self.expect(Token::RBrace)?;
@@ -1074,11 +1127,11 @@ pub fn parse(source: &str) -> Result<Program, ParseError> {
 /// Parse and validate source code
 pub fn parse_and_validate(source: &str) -> Result<Program, ParseError> {
     let program = parse(source)?;
-    
+
     if let Err(e) = syntax::validate_program(&program) {
         return Err(ParseError::InvalidExpression(e));
     }
-    
+
     Ok(program)
 }
 
@@ -1131,7 +1184,10 @@ mod tests {
 
         let program = parse(source).unwrap();
         match &program.state[0].initial_value {
-            Expr::BinaryOp { op: BinaryOperator::Add, .. } => {}
+            Expr::BinaryOp {
+                op: BinaryOperator::Add,
+                ..
+            } => {}
             _ => panic!("Expected Add at top level"),
         }
     }

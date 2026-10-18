@@ -1,25 +1,29 @@
 use crate::{
-    ast::{Program, Expr, MessagePattern, BinaryOperator, UnaryOperator},
-    state::{State, Value, StateHistory},
-    message::Message,
-    Element,
+    ast::{BinaryOperator, Expr, MessagePattern, Program, UnaryOperator},
     limits::{RuntimeLimits, ValidationError},
-    style::{Style, Size, Padding, Alignment},
-    properties::Properties,
-    primitives::layout::{Row, Column, Container, Stack, Grid, Spacer, Divider, Direction, Orientation},
-    primitives::content::{Text, Image, Avatar, Badge, BadgeVariant, Tooltip, TooltipPosition, Status, StatusType, Timestamp, TimestampFormat},
-    primitives::input::{Input, InputType, Button, ButtonVariant, Checkbox, Dropdown},
-    primitives::scrolling::{Scroll, ScrollDirection, ScrollBar, List, ListOrientation},
-    primitives::containers::{Panel, Tab, TabBarPosition, Part, Modal, Popover, PopoverPosition},
-    primitives::scrolling::{MessageList, MessageItem},
-    primitives::messenger::{
-        MessageBubble, MessageBubbleType, Reaction,
-        Reply, Attachment, AttachmentType, TypingIndicator,
-        SearchBar, SearchScope, Filters,
+    message::Message,
+    primitives::containers::{Modal, Panel, Part, Popover, PopoverPosition, Tab, TabBarPosition},
+    primitives::content::{
+        Avatar, Badge, BadgeVariant, Image, Status, StatusType, Text, Timestamp, TimestampFormat,
+        Tooltip, TooltipPosition,
     },
+    primitives::input::{Button, ButtonVariant, Checkbox, Dropdown, Input, InputType},
+    primitives::layout::{
+        Column, Container, Direction, Divider, Grid, Orientation, Row, Spacer, Stack,
+    },
+    primitives::messenger::{
+        Attachment, AttachmentType, Filters, MessageBubble, MessageBubbleType, Reaction, Reply,
+        SearchBar, SearchScope, TypingIndicator,
+    },
+    primitives::scrolling::{List, ListOrientation, Scroll, ScrollBar, ScrollDirection},
+    primitives::scrolling::{MessageItem, MessageList},
+    properties::Properties,
+    state::{State, StateHistory, Value},
+    style::{Alignment, Padding, Size, Style},
+    Element,
 };
 use std::collections::HashMap;
-  
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum RuntimeError {
     UndefinedVariable(String),
@@ -47,9 +51,10 @@ type BuiltinFunction = fn(&[Value]) -> Result<Value, RuntimeError>;
 impl Runtime {
     pub fn new(program: Program, limits: RuntimeLimits) -> Result<Self, RuntimeError> {
         let mut initial_state = State::new();
-        
+
         for state_decl in &program.state {
-            let value = Self::eval_expr_static(&state_decl.initial_value, &initial_state, &limits, 0)?;
+            let value =
+                Self::eval_expr_static(&state_decl.initial_value, &initial_state, &limits, 0)?;
             initial_state = initial_state.set(state_decl.name.clone(), value);
         }
 
@@ -69,7 +74,7 @@ impl Runtime {
     pub fn render(&self) -> Result<Element, RuntimeError> {
         let view_expr = &self.program.view.body;
         let value = self.eval_expr(view_expr)?;
-        
+
         match value {
             Value::Element(el) => Ok(el),
             _ => Err(RuntimeError::TypeError {
@@ -83,21 +88,22 @@ impl Runtime {
         for rule in &self.program.update {
             if Self::matches_pattern(&rule.pattern, &message) {
                 let mut updates = HashMap::new();
-                
+
                 for (var_name, expr) in &rule.state_update {
                     let value = self.eval_expr(expr)?;
                     updates.insert(var_name.clone(), value);
                 }
-                
+
                 let new_state = self.state.update_many(updates);
-                
-                self.history.push(new_state.clone(), timestamp, Some(message));
+
+                self.history
+                    .push(new_state.clone(), timestamp, Some(message));
                 self.state = new_state;
-                
+
                 return Ok(());
             }
         }
-        
+
         Ok(())
     }
 
@@ -111,12 +117,14 @@ impl Runtime {
         limits: &RuntimeLimits,
         depth: usize,
     ) -> Result<Value, RuntimeError> {
-        limits.validate_depth(depth)
+        limits
+            .validate_depth(depth)
             .map_err(RuntimeError::LimitExceeded)?;
 
         match expr {
             Expr::String(s) => {
-                limits.validate_text_length(s.len())
+                limits
+                    .validate_text_length(s.len())
                     .map_err(RuntimeError::LimitExceeded)?;
                 Ok(Value::String(s.clone()))
             }
@@ -129,7 +137,12 @@ impl Runtime {
                     return Ok(v.clone());
                 }
                 // Uppercase bare identifier slipped through: treat as string literal
-                if name.chars().next().map(|c| c.is_uppercase()).unwrap_or(false) {
+                if name
+                    .chars()
+                    .next()
+                    .map(|c| c.is_uppercase())
+                    .unwrap_or(false)
+                {
                     return Ok(Value::String(name.clone()));
                 }
                 Err(RuntimeError::UndefinedVariable(name.clone()))
@@ -141,9 +154,10 @@ impl Runtime {
             }
 
             Expr::List(items) => {
-                limits.validate_list_items(items.len())
+                limits
+                    .validate_list_items(items.len())
                     .map_err(RuntimeError::LimitExceeded)?;
-                    
+
                 let mut values = Vec::new();
                 for item in items {
                     values.push(Self::eval_expr_static(item, state, limits, depth + 1)?);
@@ -171,7 +185,11 @@ impl Runtime {
                 Self::apply_unary_op(*op, &operand_val)
             }
 
-            Expr::If { condition, then_branch, else_branch } => {
+            Expr::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 let cond_val = Self::eval_expr_static(condition, state, limits, depth + 1)?;
                 if cond_val.is_truthy() {
                     Self::eval_expr_static(then_branch, state, limits, depth + 1)
@@ -187,36 +205,48 @@ impl Runtime {
                 for arg in args {
                     arg_values.push(Self::eval_expr_static(arg, state, limits, depth + 1)?);
                 }
-                
+
                 Self::call_builtin(name, &arg_values)
             }
 
-            Expr::MethodCall { object, method, args } => {
+            Expr::MethodCall {
+                object,
+                method,
+                args,
+            } => {
                 let obj_value = Self::eval_expr_static(object, state, limits, depth + 1)?;
-                
+
                 let mut arg_values = Vec::new();
                 for arg in args {
                     arg_values.push(Self::eval_expr_static(arg, state, limits, depth + 1)?);
                 }
-                
+
                 Self::call_method(&obj_value, method, &arg_values)
             }
 
-            Expr::Element { element_type, properties, children } => {
-                Self::create_element(element_type, properties, children, state, limits, depth + 1)
-            }
+            Expr::Element {
+                element_type,
+                properties,
+                children,
+            } => Self::create_element(element_type, properties, children, state, limits, depth + 1),
 
-            Expr::Lambda { params, body } => {
-                Ok(Value::Lambda { params: params.clone(), body: body.clone() })
-            }
+            Expr::Lambda { params, body } => Ok(Value::Lambda {
+                params: params.clone(),
+                body: body.clone(),
+            }),
         }
     }
 
     fn matches_pattern(pattern: &MessagePattern, message: &Message) -> bool {
         match (pattern, message) {
             (MessagePattern::Clicked { id: p_id }, Message::Clicked { id: m_id }) => p_id == m_id,
-            (MessagePattern::RightClicked { id: p_id }, Message::RightClicked { id: m_id }) => p_id == m_id,
-            (MessagePattern::InputChanged { id: p_id, .. }, Message::InputChanged { id: m_id, .. }) => p_id == m_id,
+            (MessagePattern::RightClicked { id: p_id }, Message::RightClicked { id: m_id }) => {
+                p_id == m_id
+            }
+            (
+                MessagePattern::InputChanged { id: p_id, .. },
+                Message::InputChanged { id: m_id, .. },
+            ) => p_id == m_id,
             (MessagePattern::MessageSent, Message::MessageSent { .. }) => true,
             (MessagePattern::MessageReceived { .. }, Message::MessageReceived { .. }) => true,
             (MessagePattern::Any, _) => true,
@@ -257,8 +287,12 @@ impl Runtime {
 
         match (left, op, right) {
             (Value::Number(l), BinaryOperator::Add, Value::Number(r)) => Ok(Value::Number(l + r)),
-            (Value::Number(l), BinaryOperator::Subtract, Value::Number(r)) => Ok(Value::Number(l - r)),
-            (Value::Number(l), BinaryOperator::Multiply, Value::Number(r)) => Ok(Value::Number(l * r)),
+            (Value::Number(l), BinaryOperator::Subtract, Value::Number(r)) => {
+                Ok(Value::Number(l - r))
+            }
+            (Value::Number(l), BinaryOperator::Multiply, Value::Number(r)) => {
+                Ok(Value::Number(l * r))
+            }
             (Value::Number(l), BinaryOperator::Divide, Value::Number(r)) => {
                 if *r == 0.0 {
                     Err(RuntimeError::DivisionByZero)
@@ -273,8 +307,12 @@ impl Runtime {
                     Ok(Value::Number(l % r))
                 }
             }
-            (Value::Boolean(l), BinaryOperator::And, Value::Boolean(r)) => Ok(Value::Boolean(*l && *r)),
-            (Value::Boolean(l), BinaryOperator::Or, Value::Boolean(r)) => Ok(Value::Boolean(*l || *r)),
+            (Value::Boolean(l), BinaryOperator::And, Value::Boolean(r)) => {
+                Ok(Value::Boolean(*l && *r))
+            }
+            (Value::Boolean(l), BinaryOperator::Or, Value::Boolean(r)) => {
+                Ok(Value::Boolean(*l || *r))
+            }
 
             // Equality works on any two values of the same shape.
             (_, BinaryOperator::Equal, _) => Ok(Value::Boolean(left == right)),
@@ -323,7 +361,10 @@ impl Runtime {
                 }
             }
 
-            _ => Err(RuntimeError::InvalidOperation(format!("Cannot apply {:?} to {:?} and {:?}", op, left, right))),
+            _ => Err(RuntimeError::InvalidOperation(format!(
+                "Cannot apply {:?} to {:?} and {:?}",
+                op, left, right
+            ))),
         }
     }
 
@@ -355,7 +396,10 @@ impl Runtime {
         match (op, operand) {
             (UnaryOperator::Not, Value::Boolean(b)) => Ok(Value::Boolean(!b)),
             (UnaryOperator::Negate, Value::Number(n)) => Ok(Value::Number(-n)),
-            _ => Err(RuntimeError::InvalidOperation(format!("Cannot apply {:?} to {:?}", op, operand))),
+            _ => Err(RuntimeError::InvalidOperation(format!(
+                "Cannot apply {:?} to {:?}",
+                op, operand
+            ))),
         }
     }
 
@@ -385,86 +429,130 @@ impl Runtime {
 
         // Helper to get property values
         let get_string = |key: &str, default: &str| -> String {
-            props.get(key)
+            props
+                .get(key)
                 .and_then(|v| v.to_display_string())
                 .unwrap_or_else(|| default.to_string())
         };
 
         let get_f32 = |key: &str, default: f32| -> f32 {
-            props.get(key)
-                .and_then(|v| if let Value::Number(n) = v { Some(*n as f32) } else { None })
+            props
+                .get(key)
+                .and_then(|v| {
+                    if let Value::Number(n) = v {
+                        Some(*n as f32)
+                    } else {
+                        None
+                    }
+                })
                 .unwrap_or(default)
         };
 
         let get_bool = |key: &str, default: bool| -> bool {
-            props.get(key)
-                .and_then(|v| if let Value::Boolean(b) = v { Some(*b) } else { None })
+            props
+                .get(key)
+                .and_then(|v| {
+                    if let Value::Boolean(b) = v {
+                        Some(*b)
+                    } else {
+                        None
+                    }
+                })
                 .unwrap_or(default)
         };
 
         let get_id = || -> Option<String> {
-            props.get("id")
-                .and_then(|v| if let Value::String(s) = v { Some(s.clone()) } else { None })
+            props.get("id").and_then(|v| {
+                if let Value::String(s) = v {
+                    Some(s.clone())
+                } else {
+                    None
+                }
+            })
         };
 
-        let focus_after: Option<String> = props.get("focusAfter")
-            .and_then(|v| if let Value::String(s) = v { Some(s.clone()) } else { None });
+        let focus_after: Option<String> = props.get("focusAfter").and_then(|v| {
+            if let Value::String(s) = v {
+                Some(s.clone())
+            } else {
+                None
+            }
+        });
 
-        let navigate: Option<String> = props.get("navigate")
-            .and_then(|v| if let Value::String(s) = v { Some(s.clone()) } else { None });
+        let navigate: Option<String> = props.get("navigate").and_then(|v| {
+            if let Value::String(s) = v {
+                Some(s.clone())
+            } else {
+                None
+            }
+        });
 
-        let action: Option<String> = props.get("action")
-            .and_then(|v| if let Value::String(s) = v { Some(s.clone()) } else { None });
+        let action: Option<String> = props.get("action").and_then(|v| {
+            if let Value::String(s) = v {
+                Some(s.clone())
+            } else {
+                None
+            }
+        });
 
-        let action_input: Option<String> = props.get("actionInput")
-            .and_then(|v| if let Value::String(s) = v { Some(s.clone()) } else { None });
+        let action_input: Option<String> = props.get("actionInput").and_then(|v| {
+            if let Value::String(s) = v {
+                Some(s.clone())
+            } else {
+                None
+            }
+        });
 
-        let result_to: Option<String> = props.get("resultTo")
-            .and_then(|v| if let Value::String(s) = v { Some(s.clone()) } else { None });
+        let result_to: Option<String> = props.get("resultTo").and_then(|v| {
+            if let Value::String(s) = v {
+                Some(s.clone())
+            } else {
+                None
+            }
+        });
 
-        let result_format: Option<String> = props.get("resultFormat")
-            .and_then(|v| if let Value::String(s) = v { Some(s.clone()) } else { None });
+        let result_format: Option<String> = props.get("resultFormat").and_then(|v| {
+            if let Value::String(s) = v {
+                Some(s.clone())
+            } else {
+                None
+            }
+        });
 
         // Match element type and construct
         let element = match element_type {
-            "Column" => {
-                Element::Column(Column {
-                    children: child_elements,
-                    spacing: get_f32("spacing", 0.0),
-                    alignment: Alignment::Start,
-                    justify: Alignment::Start,
-                    padding: Padding::zero(),
-                    width: Size::Auto,
-                    height: Size::Auto,
-                })
-            }
+            "Column" => Element::Column(Column {
+                children: child_elements,
+                spacing: get_f32("spacing", 0.0),
+                alignment: Alignment::Start,
+                justify: Alignment::Start,
+                padding: Padding::zero(),
+                width: Size::Auto,
+                height: Size::Auto,
+            }),
 
-            "Row" => {
-                Element::Row(Row {
-                    children: child_elements,
-                    spacing: get_f32("spacing", 0.0),
-                    alignment: Alignment::Start,
-                    justify: Alignment::Start,
-                    wrap: get_bool("wrap", false),
-                    padding: Padding::zero(),
-                    width: Size::Auto,
-                    height: Size::Auto,
-                })
-            }
+            "Row" => Element::Row(Row {
+                children: child_elements,
+                spacing: get_f32("spacing", 0.0),
+                alignment: Alignment::Start,
+                justify: Alignment::Start,
+                wrap: get_bool("wrap", false),
+                padding: Padding::zero(),
+                width: Size::Auto,
+                height: Size::Auto,
+            }),
 
-            "Container" => {
-                Element::Container(Container {
-                    children: child_elements,
-                    width: Size::Auto,
-                    height: Size::Auto,
-                    padding: Padding::zero(),
-                    margins: crate::style::Margins::zero(),
-                    background_colour: None,
-                    borders: crate::style::Borders::none(),
-                    alignment: Alignment::Start,
-                    clip: false,
-                })
-            }
+            "Container" => Element::Container(Container {
+                children: child_elements,
+                width: Size::Auto,
+                height: Size::Auto,
+                padding: Padding::zero(),
+                margins: crate::style::Margins::zero(),
+                background_colour: None,
+                borders: crate::style::Borders::none(),
+                alignment: Alignment::Start,
+                clip: false,
+            }),
 
             "Stack" => {
                 let direction = match get_string("direction", "Vertical").as_str() {
@@ -483,29 +571,31 @@ impl Runtime {
                 })
             }
 
-            "Grid" => {
-                Element::Grid(Grid {
-                    children: child_elements,
-                    columns: get_f32("columns", 2.0) as usize,
-                    rows: None,
-                    column_gap: get_f32("column_gap", 0.0),
-                    row_gap: get_f32("row_gap", 0.0),
-                    column_widths: vec![],
-                    row_heights: vec![],
-                    alignment: Alignment::Start,
-                    padding: Padding::zero(),
-                    width: Size::Auto,
-                    height: Size::Auto,
-                })
-            }
+            "Grid" => Element::Grid(Grid {
+                children: child_elements,
+                columns: get_f32("columns", 2.0) as usize,
+                rows: None,
+                column_gap: get_f32("column_gap", 0.0),
+                row_gap: get_f32("row_gap", 0.0),
+                column_widths: vec![],
+                row_heights: vec![],
+                alignment: Alignment::Start,
+                padding: Padding::zero(),
+                width: Size::Auto,
+                height: Size::Auto,
+            }),
 
-            "Spacer" => {
-                Element::Spacer(Spacer {
-                    width: Size::Auto,
-                    height: Size::Auto,
-                    grow: props.get("grow").and_then(|v| if let Value::Number(n) = v { Some(*n as f32) } else { None }),
-                })
-            }
+            "Spacer" => Element::Spacer(Spacer {
+                width: Size::Auto,
+                height: Size::Auto,
+                grow: props.get("grow").and_then(|v| {
+                    if let Value::Number(n) = v {
+                        Some(*n as f32)
+                    } else {
+                        None
+                    }
+                }),
+            }),
 
             "Divider" => {
                 let orientation = match get_string("orientation", "Horizontal").as_str() {
@@ -521,32 +611,50 @@ impl Runtime {
                 })
             }
 
-            "Text" => {
-                Element::Text(Text {
-                    properties: Properties::default().with_id(get_id().unwrap_or_default()).with_focus_after(focus_after.clone()).with_navigate(navigate.clone()).with_action(action.clone()).with_action_input(action_input.clone()).with_result_to(result_to.clone()),
-                    style: Style::default(),
-                    content: get_string("content", ""),
-                })
-            }
+            "Text" => Element::Text(Text {
+                properties: Properties::default()
+                    .with_id(get_id().unwrap_or_default())
+                    .with_focus_after(focus_after.clone())
+                    .with_navigate(navigate.clone())
+                    .with_action(action.clone())
+                    .with_action_input(action_input.clone())
+                    .with_result_to(result_to.clone()),
+                style: Style::default(),
+                content: get_string("content", ""),
+            }),
 
-            "Image" => {
-                Element::Image(Image {
-                    properties: Properties::default().with_id(get_id().unwrap_or_default()).with_focus_after(focus_after.clone()).with_navigate(navigate.clone()).with_action(action.clone()).with_action_input(action_input.clone()).with_result_to(result_to.clone()),
-                    style: Style::default(),
-                    src: get_string("src", ""),
-                    alt: get_string("alt", ""),
-                })
-            }
+            "Image" => Element::Image(Image {
+                properties: Properties::default()
+                    .with_id(get_id().unwrap_or_default())
+                    .with_focus_after(focus_after.clone())
+                    .with_navigate(navigate.clone())
+                    .with_action(action.clone())
+                    .with_action_input(action_input.clone())
+                    .with_result_to(result_to.clone()),
+                style: Style::default(),
+                src: get_string("src", ""),
+                alt: get_string("alt", ""),
+            }),
 
-            "Avatar" => {
-                Element::Avatar(Avatar {
-                    properties: Properties::default().with_id(get_id().unwrap_or_default()).with_focus_after(focus_after.clone()).with_navigate(navigate.clone()).with_action(action.clone()).with_action_input(action_input.clone()).with_result_to(result_to.clone()),
-                    style: Style::default(),
-                    src: get_string("src", ""),
-                    size: get_f32("size", 40.0),
-                    fallback: props.get("fallback").and_then(|v| if let Value::String(s) = v { Some(s.clone()) } else { None }),
-                })
-            }
+            "Avatar" => Element::Avatar(Avatar {
+                properties: Properties::default()
+                    .with_id(get_id().unwrap_or_default())
+                    .with_focus_after(focus_after.clone())
+                    .with_navigate(navigate.clone())
+                    .with_action(action.clone())
+                    .with_action_input(action_input.clone())
+                    .with_result_to(result_to.clone()),
+                style: Style::default(),
+                src: get_string("src", ""),
+                size: get_f32("size", 40.0),
+                fallback: props.get("fallback").and_then(|v| {
+                    if let Value::String(s) = v {
+                        Some(s.clone())
+                    } else {
+                        None
+                    }
+                }),
+            }),
 
             "Badge" => {
                 let variant = match get_string("variant", "Primary").as_str() {
@@ -557,7 +665,13 @@ impl Runtime {
                     _ => BadgeVariant::Primary,
                 };
                 Element::Badge(Badge {
-                    properties: Properties::default().with_id(get_id().unwrap_or_default()).with_focus_after(focus_after.clone()).with_navigate(navigate.clone()).with_action(action.clone()).with_action_input(action_input.clone()).with_result_to(result_to.clone()),
+                    properties: Properties::default()
+                        .with_id(get_id().unwrap_or_default())
+                        .with_focus_after(focus_after.clone())
+                        .with_navigate(navigate.clone())
+                        .with_action(action.clone())
+                        .with_action_input(action_input.clone())
+                        .with_result_to(result_to.clone()),
                     style: Style::default(),
                     content: get_string("content", ""),
                     variant,
@@ -573,7 +687,13 @@ impl Runtime {
                     _ => StatusType::Online,
                 };
                 Element::Status(Status {
-                    properties: Properties::default().with_id(get_id().unwrap_or_default()).with_focus_after(focus_after.clone()).with_navigate(navigate.clone()).with_action(action.clone()).with_action_input(action_input.clone()).with_result_to(result_to.clone()),
+                    properties: Properties::default()
+                        .with_id(get_id().unwrap_or_default())
+                        .with_focus_after(focus_after.clone())
+                        .with_navigate(navigate.clone())
+                        .with_action(action.clone())
+                        .with_action_input(action_input.clone())
+                        .with_result_to(result_to.clone()),
                     style: Style::default(),
                     status,
                     show_text: get_bool("show_text", false),
@@ -592,7 +712,13 @@ impl Runtime {
                     _ => TimestampFormat::ShortTime,
                 };
                 Element::Timestamp(Timestamp {
-                    properties: Properties::default().with_id(get_id().unwrap_or_default()).with_focus_after(focus_after.clone()).with_navigate(navigate.clone()).with_action(action.clone()).with_action_input(action_input.clone()).with_result_to(result_to.clone()),
+                    properties: Properties::default()
+                        .with_id(get_id().unwrap_or_default())
+                        .with_focus_after(focus_after.clone())
+                        .with_navigate(navigate.clone())
+                        .with_action(action.clone())
+                        .with_action_input(action_input.clone())
+                        .with_result_to(result_to.clone()),
                     style: Style::default(),
                     time: get_f32("time", 0.0) as u64,
                     format,
@@ -609,7 +735,13 @@ impl Runtime {
                     _ => TooltipPosition::Top,
                 };
                 Element::Tooltip(Tooltip {
-                    properties: Properties::default().with_id(get_id().unwrap_or_default()).with_focus_after(focus_after.clone()).with_navigate(navigate.clone()).with_action(action.clone()).with_action_input(action_input.clone()).with_result_to(result_to.clone()),
+                    properties: Properties::default()
+                        .with_id(get_id().unwrap_or_default())
+                        .with_focus_after(focus_after.clone())
+                        .with_navigate(navigate.clone())
+                        .with_action(action.clone())
+                        .with_action_input(action_input.clone())
+                        .with_result_to(result_to.clone()),
                     style: Style::default(),
                     content: get_string("content", ""),
                     target_id: get_string("target_id", ""),
@@ -628,7 +760,14 @@ impl Runtime {
                     _ => ButtonVariant::Primary,
                 };
                 Element::Button(Button {
-                    properties: Properties::default().with_id(get_id().unwrap_or_default()).with_focus_after(focus_after.clone()).with_navigate(navigate.clone()).with_action(action.clone()).with_action_input(action_input.clone()).with_result_to(result_to.clone()).with_result_format(result_format.clone()),
+                    properties: Properties::default()
+                        .with_id(get_id().unwrap_or_default())
+                        .with_focus_after(focus_after.clone())
+                        .with_navigate(navigate.clone())
+                        .with_action(action.clone())
+                        .with_action_input(action_input.clone())
+                        .with_result_to(result_to.clone())
+                        .with_result_format(result_format.clone()),
                     style: Style::default(),
                     text: get_string("text", ""),
                     variant,
@@ -645,38 +784,58 @@ impl Runtime {
                     _ => InputType::Text,
                 };
                 Element::Input(Input {
-                    properties: Properties::default().with_id(get_id().unwrap_or_default()).with_focus_after(focus_after.clone()).with_navigate(navigate.clone()).with_action(action.clone()).with_action_input(action_input.clone()).with_result_to(result_to.clone()),
+                    properties: Properties::default()
+                        .with_id(get_id().unwrap_or_default())
+                        .with_focus_after(focus_after.clone())
+                        .with_navigate(navigate.clone())
+                        .with_action(action.clone())
+                        .with_action_input(action_input.clone())
+                        .with_result_to(result_to.clone()),
                     style: Style::default(),
                     value: get_string("value", ""),
                     placeholder: get_string("placeholder", ""),
                     input_type,
-                    max_length: props.get("max_length").and_then(|v| if let Value::Number(n) = v { Some(*n as usize) } else { None }),
+                    max_length: props.get("max_length").and_then(|v| {
+                        if let Value::Number(n) = v {
+                            Some(*n as usize)
+                        } else {
+                            None
+                        }
+                    }),
                     readonly: get_bool("readonly", false),
                     required: get_bool("required", false),
                 })
             }
 
-            "Checkbox" => {
-                Element::Checkbox(Checkbox {
-                    properties: Properties::default().with_id(get_id().unwrap_or_default()).with_focus_after(focus_after.clone()).with_navigate(navigate.clone()).with_action(action.clone()).with_action_input(action_input.clone()).with_result_to(result_to.clone()),
-                    style: Style::default(),
-                    checked: get_bool("checked", false),
-                    label: get_string("label", ""),
-                    indeterminate: get_bool("indeterminate", false),
-                })
-            }
+            "Checkbox" => Element::Checkbox(Checkbox {
+                properties: Properties::default()
+                    .with_id(get_id().unwrap_or_default())
+                    .with_focus_after(focus_after.clone())
+                    .with_navigate(navigate.clone())
+                    .with_action(action.clone())
+                    .with_action_input(action_input.clone())
+                    .with_result_to(result_to.clone()),
+                style: Style::default(),
+                checked: get_bool("checked", false),
+                label: get_string("label", ""),
+                indeterminate: get_bool("indeterminate", false),
+            }),
 
-            "Dropdown" => {
-                Element::Dropdown(Dropdown {
-                    properties: Properties::default().with_id(get_id().unwrap_or_default()).with_focus_after(focus_after.clone()).with_navigate(navigate.clone()).with_action(action.clone()).with_action_input(action_input.clone()).with_result_to(result_to.clone()),
-                    style: Style::default(),
-                    options: vec![],
-                    selected_index: None,
-                    placeholder: get_string("placeholder", ""),
-                    searchable: get_bool("searchable", false),
-                    multi_select: get_bool("multi_select", false),
-                })
-            }
+            "Dropdown" => Element::Dropdown(Dropdown {
+                properties: Properties::default()
+                    .with_id(get_id().unwrap_or_default())
+                    .with_focus_after(focus_after.clone())
+                    .with_navigate(navigate.clone())
+                    .with_action(action.clone())
+                    .with_action_input(action_input.clone())
+                    .with_result_to(result_to.clone()),
+                style: Style::default(),
+                options: vec![],
+                selected_index: None,
+                placeholder: get_string("placeholder", ""),
+                searchable: get_bool("searchable", false),
+                multi_select: get_bool("multi_select", false),
+            }),
 
             "Scroll" => {
                 let direction = match get_string("direction", "Vertical").as_str() {
@@ -684,7 +843,7 @@ impl Runtime {
                     "Both" => ScrollDirection::Both,
                     _ => ScrollDirection::Vertical,
                 };
-                
+
                 // Scroll can only have one child, wrap multiple in a container
                 let child = if child_elements.len() == 1 {
                     Box::new(child_elements.into_iter().next().unwrap())
@@ -809,18 +968,27 @@ impl Runtime {
                     }))
                 };
 
-                let direction = match get_string("direction", "horizontal").to_lowercase().as_str() {
+                let direction = match get_string("direction", "horizontal")
+                    .to_lowercase()
+                    .as_str()
+                {
                     "vertical" | "v" => "vertical".to_string(),
                     _ => "horizontal".to_string(),
                 };
                 let parse_size = |key: &str| -> Option<f32> {
-                    props.get(key).and_then(|v| if let Value::Number(n) = v { Some(*n as f32) } else { None })
+                    props.get(key).and_then(|v| {
+                        if let Value::Number(n) = v {
+                            Some(*n as f32)
+                        } else {
+                            None
+                        }
+                    })
                 };
                 let width_val = parse_size("width");
                 let height_val = parse_size("height");
                 Element::Part(Part {
                     child,
-                    width:  width_val.map(Size::Fixed).unwrap_or(Size::Auto),
+                    width: width_val.map(Size::Fixed).unwrap_or(Size::Auto),
                     height: height_val.map(Size::Fixed).unwrap_or(Size::Auto),
                     padding: Padding::zero(),
                     margins: crate::style::Margins::zero(),
@@ -828,8 +996,8 @@ impl Runtime {
                     borders: crate::style::Borders::none(),
                     resizable: get_bool("resizable", true),
                     direction,
-                    min_width:  parse_size("minWidth"),
-                    max_width:  parse_size("maxWidth"),
+                    min_width: parse_size("minWidth"),
+                    max_width: parse_size("maxWidth"),
                     min_height: parse_size("minHeight"),
                     max_height: parse_size("maxHeight"),
                 })
@@ -947,19 +1115,17 @@ impl Runtime {
                 })
             }
 
-            "Reaction" => {
-                Element::Reaction(Reaction {
-                    reactions: vec![],
-                    max_display: get_f32("max_display", 5.0) as usize,
-                    size: get_f32("size", 20.0),
-                    spacing: get_f32("spacing", 4.0),
-                    padding: Padding::zero(),
-                    background_colour: crate::style::Colour::TRANSPARENT,
-                    active_background: crate::style::Colour::rgb(230, 230, 230),
-                    borders: crate::style::Borders::none(),
-                    show_count: get_bool("show_count", true),
-                })
-            }
+            "Reaction" => Element::Reaction(Reaction {
+                reactions: vec![],
+                max_display: get_f32("max_display", 5.0) as usize,
+                size: get_f32("size", 20.0),
+                spacing: get_f32("spacing", 4.0),
+                padding: Padding::zero(),
+                background_colour: crate::style::Colour::TRANSPARENT,
+                active_background: crate::style::Colour::rgb(230, 230, 230),
+                borders: crate::style::Borders::none(),
+                show_count: get_bool("show_count", true),
+            }),
 
             "Reply" => {
                 let original = if child_elements.len() == 1 {
@@ -1012,63 +1178,57 @@ impl Runtime {
                 })
             }
 
-            "TypingIndicator" => {
-                Element::TypingIndicator(TypingIndicator {
-                    users: vec![],
-                    max_display: get_f32("max_display", 3.0) as usize,
-                    text: get_string("text", "is typing..."),
-                    styling: Style::default(),
-                    show_avatars: get_bool("show_avatars", true),
-                })
-            }
+            "TypingIndicator" => Element::TypingIndicator(TypingIndicator {
+                users: vec![],
+                max_display: get_f32("max_display", 3.0) as usize,
+                text: get_string("text", "is typing..."),
+                styling: Style::default(),
+                show_avatars: get_bool("show_avatars", true),
+            }),
 
-            "SearchBar" => {
-                Element::SearchBar(SearchBar {
-                    placeholder: get_string("placeholder", "Search..."),
-                    value: get_string("value", ""),
-                    search_scope: SearchScope::All,
-                    filters: Filters {
-                        date_from: None,
-                        date_to: None,
-                        sender: None,
-                        has_attachments: false,
-                        has_reactions: false,
-                    },
-                    styling: Style::default(),
-                    show_scope_selector: get_bool("show_scope_selector", false),
-                    show_filters: get_bool("show_filters", false),
-                    show_results_count: get_bool("show_results_count", false),
-                    results_count: 0,
-                    icon: None,
-                })
-            }
+            "SearchBar" => Element::SearchBar(SearchBar {
+                placeholder: get_string("placeholder", "Search..."),
+                value: get_string("value", ""),
+                search_scope: SearchScope::All,
+                filters: Filters {
+                    date_from: None,
+                    date_to: None,
+                    sender: None,
+                    has_attachments: false,
+                    has_reactions: false,
+                },
+                styling: Style::default(),
+                show_scope_selector: get_bool("show_scope_selector", false),
+                show_filters: get_bool("show_filters", false),
+                show_results_count: get_bool("show_results_count", false),
+                results_count: 0,
+                icon: None,
+            }),
 
-            "MessageList" => {
-                Element::MessageList(MessageList {
-                    messages: child_elements
-                        .into_iter()
-                        .enumerate()
-                        .map(|(i, el)| MessageItem {
-                            element: el,
-                            alignment: Alignment::Start,
-                            timestamp: 0,
-                            id: i.to_string(),
-                            height: None,
-                        })
-                        .collect(),
-                    width: Size::Auto,
-                    height: Size::Auto,
-                    padding: Padding::zero(),
-                    spacing: get_f32("spacing", 8.0),
-                    group_spacing: get_f32("group_spacing", 16.0),
-                    group_threshold: 300,
-                    scrollbar: crate::primitives::scrolling::ScrollBar::default(),
-                    auto_scroll: get_bool("auto_scroll", true),
-                    scroll_threshold: get_f32("scroll_threshold", 100.0),
-                    show_timestamps: get_bool("show_timestamps", true),
-                    reverse_order: get_bool("reverse_order", false),
-                })
-            }
+            "MessageList" => Element::MessageList(MessageList {
+                messages: child_elements
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, el)| MessageItem {
+                        element: el,
+                        alignment: Alignment::Start,
+                        timestamp: 0,
+                        id: i.to_string(),
+                        height: None,
+                    })
+                    .collect(),
+                width: Size::Auto,
+                height: Size::Auto,
+                padding: Padding::zero(),
+                spacing: get_f32("spacing", 8.0),
+                group_spacing: get_f32("group_spacing", 16.0),
+                group_threshold: 300,
+                scrollbar: crate::primitives::scrolling::ScrollBar::default(),
+                auto_scroll: get_bool("auto_scroll", true),
+                scroll_threshold: get_f32("scroll_threshold", 100.0),
+                show_timestamps: get_bool("show_timestamps", true),
+                reverse_order: get_bool("reverse_order", false),
+            }),
 
             _ => return Err(RuntimeError::UnknownElement(element_type.to_string())),
         };
@@ -1091,7 +1251,10 @@ impl Runtime {
         match (object, method) {
             (Value::List(list), "length") => Ok(Value::Number(list.len() as f64)),
             (Value::String(s), "length") => Ok(Value::Number(s.len() as f64)),
-            _ => Err(RuntimeError::UndefinedFunction(format!("{:?}.{}", object, method))),
+            _ => Err(RuntimeError::UndefinedFunction(format!(
+                "{:?}.{}",
+                object, method
+            ))),
         }
     }
 
@@ -1123,7 +1286,9 @@ impl Runtime {
 
 fn builtin_length(args: &[Value]) -> Result<Value, RuntimeError> {
     if args.len() != 1 {
-        return Err(RuntimeError::InvalidOperation("length expects 1 argument".to_string()));
+        return Err(RuntimeError::InvalidOperation(
+            "length expects 1 argument".to_string(),
+        ));
     }
 
     match &args[0] {
@@ -1138,7 +1303,9 @@ fn builtin_length(args: &[Value]) -> Result<Value, RuntimeError> {
 
 fn builtin_append(args: &[Value]) -> Result<Value, RuntimeError> {
     if args.len() != 2 {
-        return Err(RuntimeError::InvalidOperation("append expects 2 arguments".to_string()));
+        return Err(RuntimeError::InvalidOperation(
+            "append expects 2 arguments".to_string(),
+        ));
     }
 
     match &args[0] {
@@ -1155,24 +1322,32 @@ fn builtin_append(args: &[Value]) -> Result<Value, RuntimeError> {
 }
 
 fn builtin_map(_args: &[Value]) -> Result<Value, RuntimeError> {
-    Err(RuntimeError::InvalidOperation("map not yet implemented".to_string()))
+    Err(RuntimeError::InvalidOperation(
+        "map not yet implemented".to_string(),
+    ))
 }
 
 fn builtin_filter(_args: &[Value]) -> Result<Value, RuntimeError> {
-    Err(RuntimeError::InvalidOperation("filter not yet implemented".to_string()))
+    Err(RuntimeError::InvalidOperation(
+        "filter not yet implemented".to_string(),
+    ))
 }
 
 fn builtin_sort_by(args: &[Value]) -> Result<Value, RuntimeError> {
     if args.len() != 2 {
-        return Err(RuntimeError::InvalidOperation("sort_by expects 2 arguments".to_string()));
+        return Err(RuntimeError::InvalidOperation(
+            "sort_by expects 2 arguments".to_string(),
+        ));
     }
 
     let list = match &args[0] {
         Value::List(l) => l.clone(),
-        _ => return Err(RuntimeError::TypeError {
-            expected: "List".to_string(),
-            got: format!("{:?}", args[0]),
-        }),
+        _ => {
+            return Err(RuntimeError::TypeError {
+                expected: "List".to_string(),
+                got: format!("{:?}", args[0]),
+            })
+        }
     };
 
     let key_prop = match &args[1] {
@@ -1197,10 +1372,12 @@ fn builtin_sort_by(args: &[Value]) -> Result<Value, RuntimeError> {
                 )),
             }
         }
-        _ => return Err(RuntimeError::TypeError {
-            expected: "String or Lambda".to_string(),
-            got: format!("{:?}", args[1]),
-        }),
+        _ => {
+            return Err(RuntimeError::TypeError {
+                expected: "String or Lambda".to_string(),
+                got: format!("{:?}", args[1]),
+            })
+        }
     };
 
     let mut sorted = list;

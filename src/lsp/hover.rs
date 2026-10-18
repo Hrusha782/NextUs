@@ -1,45 +1,48 @@
 //! Hover information provider
 
-use tower_lsp::lsp_types::*;
 use crate::capabilities::{get_element_info, ELEMENT_INFO};
+use tower_lsp::lsp_types::*;
 
 /// Get hover information at the given position
 pub fn get_hover(text: &str, position: Position) -> Option<Hover> {
     let lines: Vec<&str> = text.lines().collect();
     let line_idx = position.line as usize;
-    
+
     if line_idx >= lines.len() {
         return None;
     }
-    
+
     let line = lines[line_idx];
     let col = position.character as usize;
-    
+
     // Get the word at cursor
     let word = get_word_at_position(line, col)?;
-    
+
     // Check if it's an element name
     if let Some(elem) = get_element_info(&word) {
         let mut markdown = format!("## {}\n\n{}\n\n", elem.name, elem.description);
-        
+
         if !elem.properties.is_empty() {
             markdown.push_str("### Properties\n\n");
             markdown.push_str("| Property | Type | Description |\n");
             markdown.push_str("|----------|------|-------------|\n");
-            
+
             for prop in elem.properties {
-                let default = prop.default.map(|d| format!(" (default: {})", d)).unwrap_or_default();
+                let default = prop
+                    .default
+                    .map(|d| format!(" (default: {})", d))
+                    .unwrap_or_default();
                 markdown.push_str(&format!(
                     "| `{}` | {} | {}{} |\n",
                     prop.name, prop.typ, prop.description, default
                 ));
             }
         }
-        
+
         if elem.can_have_children {
             markdown.push_str("\n*This element can contain child elements.*\n");
         }
-        
+
         return Some(Hover {
             contents: HoverContents::Markup(MarkupContent {
                 kind: MarkupKind::Markdown,
@@ -48,7 +51,7 @@ pub fn get_hover(text: &str, position: Position) -> Option<Hover> {
             range: None,
         });
     }
-    
+
     // Check if it's a keyword
     match word.as_str() {
         "state" => {
@@ -107,14 +110,17 @@ pub fn get_hover(text: &str, position: Position) -> Option<Hover> {
         }
         _ => {}
     }
-    
+
     // Check if it's a property name - look for element context
     let element_context = find_element_context(text, line_idx);
     if let Some(elem_name) = element_context {
         if let Some(elem) = get_element_info(&elem_name) {
             for prop in elem.properties {
                 if prop.name == word {
-                    let default_str = prop.default.map(|d| format!("\n\n**Default:** `{}`", d)).unwrap_or_default();
+                    let default_str = prop
+                        .default
+                        .map(|d| format!("\n\n**Default:** `{}`", d))
+                        .unwrap_or_default();
                     return Some(Hover {
                         contents: HoverContents::Markup(MarkupContent {
                             kind: MarkupKind::Markdown,
@@ -129,7 +135,7 @@ pub fn get_hover(text: &str, position: Position) -> Option<Hover> {
             }
         }
     }
-    
+
     None
 }
 
@@ -138,24 +144,24 @@ fn get_word_at_position(line: &str, col: usize) -> Option<String> {
     if col > line.len() {
         return None;
     }
-    
+
     let chars: Vec<char> = line.chars().collect();
-    
+
     // Find word boundaries
     let mut start = col;
     while start > 0 && is_word_char(chars.get(start - 1).copied().unwrap_or(' ')) {
         start -= 1;
     }
-    
+
     let mut end = col;
     while end < chars.len() && is_word_char(chars[end]) {
         end += 1;
     }
-    
+
     if start == end {
         return None;
     }
-    
+
     Some(chars[start..end].iter().collect())
 }
 
@@ -166,12 +172,12 @@ fn is_word_char(c: char) -> bool {
 /// Find the element name containing the current line
 fn find_element_context(text: &str, line_idx: usize) -> Option<String> {
     let lines: Vec<&str> = text.lines().collect();
-    
+
     // Look backwards for element start
     for i in (0..=line_idx).rev() {
         let line = lines.get(i)?;
         let trimmed = line.trim();
-        
+
         // Check for element pattern: ElementName {
         for elem in ELEMENT_INFO {
             if trimmed.starts_with(elem.name) && trimmed.contains('{') {
@@ -179,6 +185,6 @@ fn find_element_context(text: &str, line_idx: usize) -> Option<String> {
             }
         }
     }
-    
+
     None
 }

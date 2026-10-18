@@ -1,10 +1,7 @@
 use crate::ast::*;
 
 pub fn is_lvalue(expr: &Expr) -> bool {
-    matches!(
-        expr,
-        Expr::Variable(_) | Expr::PropertyAccess { .. }
-    )
+    matches!(expr, Expr::Variable(_) | Expr::PropertyAccess { .. })
 }
 pub fn is_pure_expr(expr: &Expr) -> bool {
     match expr {
@@ -15,17 +12,25 @@ pub fn is_pure_expr(expr: &Expr) -> bool {
         Expr::Object(fields) => fields.iter().all(|(_, expr)| is_pure_expr(expr)),
         Expr::BinaryOp { left, right, .. } => is_pure_expr(left) && is_pure_expr(right),
         Expr::UnaryOp { operand, .. } => is_pure_expr(operand),
-        Expr::If { condition, then_branch, else_branch } => {
+        Expr::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             is_pure_expr(condition)
                 && is_pure_expr(then_branch)
                 && else_branch.as_ref().map_or(true, |e| is_pure_expr(e))
         }
-        Expr::FunctionCall { .. } => false,  // Functions may have side effects
+        Expr::FunctionCall { .. } => false, // Functions may have side effects
         Expr::MethodCall { object, args, .. } => {
             is_pure_expr(object) && args.iter().all(is_pure_expr)
         }
         Expr::Lambda { body, .. } => is_pure_expr(body),
-        Expr::Element { properties, children, .. } => {
+        Expr::Element {
+            properties,
+            children,
+            ..
+        } => {
             properties.iter().all(|(_, expr)| is_pure_expr(expr))
                 && children.iter().all(is_pure_expr)
         }
@@ -56,7 +61,11 @@ pub fn free_variables(expr: &Expr) -> Vec<String> {
                 collect(right, bound, free);
             }
             Expr::UnaryOp { operand, .. } => collect(operand, bound, free),
-            Expr::If { condition, then_branch, else_branch } => {
+            Expr::If {
+                condition,
+                then_branch,
+                else_branch,
+            } => {
                 collect(condition, bound, free);
                 collect(then_branch, bound, free);
                 if let Some(else_b) = else_branch {
@@ -79,7 +88,11 @@ pub fn free_variables(expr: &Expr) -> Vec<String> {
                 new_bound.extend(params.clone());
                 collect(body, &new_bound, free);
             }
-            Expr::Element { properties, children, .. } => {
+            Expr::Element {
+                properties,
+                children,
+                ..
+            } => {
                 for (_, value) in properties {
                     collect(value, bound, free);
                 }
@@ -118,17 +131,16 @@ pub fn format_expr(expr: &Expr) -> String {
             format!("{{ {} }}", fields_str.join(", "))
         }
         Expr::BinaryOp { left, op, right } => {
-            format!(
-                "({} {:?} {})",
-                format_expr(left),
-                op,
-                format_expr(right)
-            )
+            format!("({} {:?} {})", format_expr(left), op, format_expr(right))
         }
         Expr::UnaryOp { op, operand } => {
             format!("({:?} {})", op, format_expr(operand))
         }
-        Expr::If { condition, then_branch, else_branch } => {
+        Expr::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             if let Some(else_b) = else_branch {
                 format!(
                     "if {} then {} else {}",
@@ -148,24 +160,35 @@ pub fn format_expr(expr: &Expr) -> String {
             let args_str: Vec<String> = args.iter().map(format_expr).collect();
             format!("{}({})", name, args_str.join(", "))
         }
-        Expr::MethodCall { object, method, args } => {
+        Expr::MethodCall {
+            object,
+            method,
+            args,
+        } => {
             let args_str: Vec<String> = args.iter().map(format_expr).collect();
-            format!("{}.{}({})", format_expr(object), method, args_str.join(", "))
+            format!(
+                "{}.{}({})",
+                format_expr(object),
+                method,
+                args_str.join(", ")
+            )
         }
         Expr::Lambda { params, body } => {
             format!("({}) => {}", params.join(", "), format_expr(body))
         }
-        Expr::Element { element_type, properties, children } => {
+        Expr::Element {
+            element_type,
+            properties,
+            children,
+        } => {
             let props_str: Vec<String> = properties
                 .iter()
                 .map(|(k, v)| format!("{}: {}", k, format_expr(v)))
                 .collect();
-            let children_str: Vec<String> = children
-                .iter()
-                .map(format_expr)
-                .collect();
-            format!("{} {{ {} }}\n{}", 
-                element_type, 
+            let children_str: Vec<String> = children.iter().map(format_expr).collect();
+            format!(
+                "{} {{ {} }}\n{}",
+                element_type,
                 props_str.join(", "),
                 children_str.join("\n")
             )
@@ -179,7 +202,11 @@ pub fn format_expr(expr: &Expr) -> String {
 /// `--check` and only fails later at render time.
 fn validate_elements(expr: &Expr) -> Result<(), String> {
     match expr {
-        Expr::Element { element_type, properties, children } => {
+        Expr::Element {
+            element_type,
+            properties,
+            children,
+        } => {
             if !crate::element::is_known_element(element_type) {
                 return Err(format!(
                     "Unknown element '{}'. It is not a NextUs primitive.",
@@ -201,7 +228,11 @@ fn validate_elements(expr: &Expr) -> Result<(), String> {
             validate_elements(right)
         }
         Expr::UnaryOp { operand, .. } => validate_elements(operand),
-        Expr::If { condition, then_branch, else_branch } => {
+        Expr::If {
+            condition,
+            then_branch,
+            else_branch,
+        } => {
             validate_elements(condition)?;
             validate_elements(then_branch)?;
             match else_branch {
@@ -239,9 +270,8 @@ pub fn validate_program(program: &Program) -> Result<(), String> {
         }
     }
 
-
     let state_names: Vec<String> = program.state.iter().map(|s| s.name.clone()).collect();
-    
+
     for rule in &program.update {
         for (var_name, update_expr) in &rule.state_update {
             validate_elements(update_expr)?;

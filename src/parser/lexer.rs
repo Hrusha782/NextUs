@@ -4,7 +4,7 @@ pub enum Token {
     String(String),
     Number(f64),
     Identifier(String),
-    
+
     // Keywords
     State,
     View,
@@ -18,45 +18,45 @@ pub enum Token {
     True,
     False,
     Null,
-    
+
     // Operators
-    Plus,           // +
-    Minus,          // -
-    Star,           // *
-    Slash,          // /
-    Percent,        // %
-    Bang,           // !
-    EqualEqual,     // ==
-    BangEqual,      // !=
-    Less,           // <
-    LessEqual,      // <=
-    Greater,        // >
-    GreaterEqual,   // >=
-    And,            // &&
-    Or,             // ||
-    Equal,          // =
-    
+    Plus,         // +
+    Minus,        // -
+    Star,         // *
+    Slash,        // /
+    Percent,      // %
+    Bang,         // !
+    EqualEqual,   // ==
+    BangEqual,    // !=
+    Less,         // <
+    LessEqual,    // <=
+    Greater,      // >
+    GreaterEqual, // >=
+    And,          // &&
+    Or,           // ||
+    Equal,        // =
+
     // Delimiters
-    LParen,         // (
-    RParen,         // )
-    LBrace,         // {
-    RBrace,         // }
-    LBracket,       // [
-    RBracket,       // ]
-    
+    LParen,   // (
+    RParen,   // )
+    LBrace,   // {
+    RBrace,   // }
+    LBracket, // [
+    RBracket, // ]
+
     // Punctuation
-    Comma,          // ,
-    Dot,            // .
-    Colon,          // :
-    Semicolon,      // ;
-    Arrow,          // ->  (thin arrow)
-    FatArrow,       // =>  (fat arrow)
-    Spread,         // ...
-    
+    Comma,     // ,
+    Dot,       // .
+    Colon,     // :
+    Semicolon, // ;
+    Arrow,     // ->  (thin arrow)
+    FatArrow,  // =>  (fat arrow)
+    Spread,    // ...
+
     // Special
     Newline,
     Eof,
-    Hash,   // # — used for style id-selectors and hex colours
+    Hash, // # — used for style id-selectors and hex colours
 }
 
 #[derive(Debug, Clone)]
@@ -70,10 +70,18 @@ impl std::fmt::Display for LexError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             LexError::UnexpectedCharacter(ch, line, col) => {
-                write!(f, "Unexpected character '{}' at line {}, column {}", ch, line, col)
+                write!(
+                    f,
+                    "Unexpected character '{}' at line {}, column {}",
+                    ch, line, col
+                )
             }
             LexError::InvalidNumber(num, line, col) => {
-                write!(f, "Invalid number '{}' at line {}, column {}", num, line, col)
+                write!(
+                    f,
+                    "Invalid number '{}' at line {}, column {}",
+                    num, line, col
+                )
             }
             LexError::UnterminatedString(line, col) => {
                 write!(f, "Unterminated string at line {}, column {}", line, col)
@@ -104,10 +112,10 @@ impl Lexer {
             column: 1,
         }
     }
-    
+
     pub fn tokenize(&mut self) -> Result<Vec<Token>, LexError> {
         let mut tokens = Vec::new();
-        
+
         loop {
             match self.next_token()? {
                 Token::Eof => {
@@ -118,34 +126,34 @@ impl Lexer {
                 token => tokens.push(token),
             }
         }
-        
+
         Ok(tokens)
     }
-    
+
     fn next_token(&mut self) -> Result<Token, LexError> {
         self.skip_whitespace_and_comments();
-        
+
         let ch = match self.current_char {
             Some(c) => c,
             None => return Ok(Token::Eof),
         };
-        
+
         if ch.is_ascii_digit() {
             return self.read_number();
         }
-        
+
         if ch.is_alphabetic() || ch == '_' {
             return self.read_identifier_or_keyword();
         }
-        
+
         if ch == '"' {
             return self.read_string();
         }
-        
+
         if ch == '#' {
             return self.read_hash_token();
         }
-        
+
         match ch {
             '=' => {
                 self.advance();
@@ -203,7 +211,7 @@ impl Lexer {
                 self.advance();
                 if self.current_char == Some('>') {
                     self.advance();
-                    return Ok(Token::Arrow);  // -> is Arrow
+                    return Ok(Token::Arrow); // -> is Arrow
                 }
                 return Ok(Token::Minus);
             }
@@ -218,7 +226,7 @@ impl Lexer {
             }
             _ => {}
         }
-        
+
         let token = match ch {
             '+' => Token::Plus,
             '*' => Token::Star,
@@ -236,11 +244,11 @@ impl Lexer {
             '\n' => Token::Newline,
             _ => return Err(LexError::UnexpectedCharacter(ch, self.line, self.column)),
         };
-        
+
         self.advance();
         Ok(token)
     }
-    
+
     fn advance(&mut self) {
         if self.current_char == Some('\n') {
             self.line += 1;
@@ -251,28 +259,30 @@ impl Lexer {
         self.position += 1;
         self.current_char = self.input.get(self.position).copied();
     }
-    
+
     fn peek(&self, offset: usize) -> Option<char> {
         self.input.get(self.position + offset).copied()
     }
-    
+
     fn skip_whitespace_and_comments(&mut self) {
         while let Some(ch) = self.current_char {
             if ch == ' ' || ch == '\t' || ch == '\r' {
                 self.advance();
                 continue;
             }
-            
+
             if ch == '/' && self.peek(1) == Some('/') {
                 self.advance();
                 self.advance();
                 while let Some(c) = self.current_char {
-                    if c == '\n' { break; }
+                    if c == '\n' {
+                        break;
+                    }
                     self.advance();
                 }
                 continue;
             }
-            
+
             if ch == '/' && self.peek(1) == Some('*') {
                 self.advance();
                 self.advance();
@@ -286,17 +296,17 @@ impl Lexer {
                 }
                 continue;
             }
-            
+
             break;
         }
     }
-    
+
     fn read_number(&mut self) -> Result<Token, LexError> {
         let start_line = self.line;
         let start_col = self.column;
         let mut num_str = String::new();
         let mut has_dot = false;
-        
+
         while let Some(ch) = self.current_char {
             if ch.is_ascii_digit() {
                 num_str.push(ch);
@@ -317,16 +327,16 @@ impl Lexer {
                 break;
             }
         }
-        
+
         num_str
             .parse::<f64>()
             .map(Token::Number)
             .map_err(|_| LexError::InvalidNumber(num_str, start_line, start_col))
     }
-    
+
     fn read_identifier_or_keyword(&mut self) -> Result<Token, LexError> {
         let mut ident = String::new();
-        
+
         while let Some(ch) = self.current_char {
             if ch.is_alphanumeric() || ch == '_' {
                 ident.push(ch);
@@ -335,7 +345,7 @@ impl Lexer {
                 break;
             }
         }
-        
+
         let token = match ident.as_str() {
             "state" => Token::State,
             "view" => Token::View,
@@ -351,20 +361,20 @@ impl Lexer {
             "null" => Token::Null,
             _ => Token::Identifier(ident),
         };
-        
+
         Ok(token)
     }
-    
+
     // A `#` is either:
     //   • a hex colour like `#ff5500` or `#fff`  → Token::String("#ff5500")
     //   • a bare `#` for id-selectors in style rules  → Token::Hash
     fn read_hash_token(&mut self) -> Result<Token, LexError> {
         self.advance(); // consume '#'
-        // Count consecutive hex digits starting at the current position
-        // WITHOUT advancing — we're just peeking here.
+                        // Count consecutive hex digits starting at the current position
+                        // WITHOUT advancing — we're just peeking here.
         let hex_run: usize = self.input[self.position..]
             .iter()
-            .take(7)                          // only need to know if we have 3 or 6
+            .take(7) // only need to know if we have 3 or 6
             .take_while(|&&c| c.is_ascii_hexdigit())
             .count();
         // Check what comes immediately after those hex digits.
@@ -392,11 +402,11 @@ impl Lexer {
     fn read_string(&mut self) -> Result<Token, LexError> {
         let start_line = self.line;
         let start_col = self.column;
-        
+
         self.advance(); // Skip opening "
-        
+
         let mut string = String::new();
-        
+
         while let Some(ch) = self.current_char {
             match ch {
                 '"' => {
@@ -427,7 +437,7 @@ impl Lexer {
                 }
             }
         }
-        
+
         Err(LexError::UnterminatedString(start_line, start_col))
     }
 }
@@ -435,22 +445,22 @@ impl Lexer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_simple_tokens() {
         let mut lexer = Lexer::new("{ : }");
         let tokens = lexer.tokenize().unwrap();
-        
+
         assert_eq!(tokens[0], Token::LBrace);
         assert_eq!(tokens[1], Token::Colon);
         assert_eq!(tokens[2], Token::RBrace);
     }
-    
+
     #[test]
     fn test_keywords() {
         let mut lexer = Lexer::new("state view update when if then else");
         let tokens = lexer.tokenize().unwrap();
-        
+
         assert_eq!(tokens[0], Token::State);
         assert_eq!(tokens[1], Token::View);
         assert_eq!(tokens[2], Token::Update);
@@ -459,34 +469,34 @@ mod tests {
         assert_eq!(tokens[5], Token::Then);
         assert_eq!(tokens[6], Token::Else);
     }
-    
+
     #[test]
     // 3.14 is a decimal literal under test, not an approximation of PI.
     #[allow(clippy::approx_constant)]
     fn test_numbers() {
         let mut lexer = Lexer::new("42 3.14 0 100.0");
         let tokens = lexer.tokenize().unwrap();
-        
+
         assert_eq!(tokens[0], Token::Number(42.0));
         assert_eq!(tokens[1], Token::Number(3.14));
         assert_eq!(tokens[2], Token::Number(0.0));
         assert_eq!(tokens[3], Token::Number(100.0));
     }
-    
+
     #[test]
     fn test_strings() {
         let mut lexer = Lexer::new(r#""hello" "world""#);
         let tokens = lexer.tokenize().unwrap();
-        
+
         assert_eq!(tokens[0], Token::String("hello".to_string()));
         assert_eq!(tokens[1], Token::String("world".to_string()));
     }
-    
+
     #[test]
     fn test_operators() {
         let mut lexer = Lexer::new("+ - * / == != < <= > >= && ||");
         let tokens = lexer.tokenize().unwrap();
-        
+
         assert_eq!(tokens[0], Token::Plus);
         assert_eq!(tokens[1], Token::Minus);
         assert_eq!(tokens[2], Token::Star);

@@ -1,4 +1,4 @@
-use crate::style::{Size, Padding, Margins, Colour, Borders, Alignment}; 
+use crate::style::{Alignment, Borders, Colour, Margins, Padding, Size};
 use crate::Element;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -49,7 +49,6 @@ pub struct Column {
     pub height: Size,
 }
 
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct Stack {
     pub children: Vec<Element>,
@@ -61,7 +60,6 @@ pub struct Stack {
     pub width: Size,
     pub height: Size,
 }
-
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Grid {
@@ -78,14 +76,12 @@ pub struct Grid {
     pub height: Size,
 }
 
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct Spacer {
     pub width: Size,
     pub height: Size,
     pub grow: Option<f32>,
 }
-
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Divider {

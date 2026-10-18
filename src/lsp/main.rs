@@ -1,20 +1,20 @@
 //! NextUs Language Server
-//! 
+//!
 //! Provides IDE features for .nxt files via the Language Server Protocol.
-//! 
+//!
 //! Run with: nextus-lsp
-//! 
+//!
 //! The server communicates over stdin/stdout using JSON-RPC.
 
+use std::collections::HashMap;
+use std::sync::RwLock;
 use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
-use std::collections::HashMap;
-use std::sync::RwLock;
 
 mod capabilities;
-mod diagnostics;
 mod completion;
+mod diagnostics;
 mod hover;
 
 /// Document state stored by the server
@@ -43,7 +43,7 @@ impl NextUsLanguageServer {
     /// Validate a document and publish diagnostics
     async fn validate_document(&self, uri: &Url, text: &str) {
         let diagnostics = diagnostics::get_diagnostics(text);
-        
+
         self.client
             .publish_diagnostics(uri.clone(), diagnostics, None)
             .await;
@@ -102,10 +102,13 @@ impl LanguageServer for NextUsLanguageServer {
         // Store document
         {
             let mut docs = self.documents.write().unwrap();
-            docs.insert(uri.to_string(), Document {
-                content: text.clone(),
-                version,
-            });
+            docs.insert(
+                uri.to_string(),
+                Document {
+                    content: text.clone(),
+                    version,
+                },
+            );
         }
 
         // Validate and publish diagnostics
@@ -116,7 +119,7 @@ impl LanguageServer for NextUsLanguageServer {
     async fn did_change(&self, params: DidChangeTextDocumentParams) {
         let uri = params.text_document.uri;
         let version = params.text_document.version;
-        
+
         // Get the full new content (we use FULL sync)
         if let Some(change) = params.content_changes.into_iter().next() {
             let text = change.text;
@@ -124,10 +127,13 @@ impl LanguageServer for NextUsLanguageServer {
             // Update stored document
             {
                 let mut docs = self.documents.write().unwrap();
-                docs.insert(uri.to_string(), Document {
-                    content: text.clone(),
-                    version,
-                });
+                docs.insert(
+                    uri.to_string(),
+                    Document {
+                        content: text.clone(),
+                        version,
+                    },
+                );
             }
 
             // Revalidate
@@ -138,7 +144,7 @@ impl LanguageServer for NextUsLanguageServer {
     /// Document closed - remove from storage
     async fn did_close(&self, params: DidCloseTextDocumentParams) {
         let uri = params.text_document.uri;
-        
+
         // Clear diagnostics
         self.client
             .publish_diagnostics(uri.clone(), vec![], None)
@@ -150,10 +156,7 @@ impl LanguageServer for NextUsLanguageServer {
     }
 
     /// Provide completions at cursor position
-    async fn completion(
-        &self,
-        params: CompletionParams,
-    ) -> Result<Option<CompletionResponse>> {
+    async fn completion(&self, params: CompletionParams) -> Result<Option<CompletionResponse>> {
         let uri = params.text_document_position.text_document.uri;
         let position = params.text_document_position.position;
 

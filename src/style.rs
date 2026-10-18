@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Colour {
     pub r: u8,
-    pub g: u8, 
+    pub g: u8,
     pub b: u8,
     pub a: u8,
 }
@@ -15,12 +15,42 @@ impl Colour {
         Self { r, g, b, a: 255 }
     }
 
-    pub const WHITE: Colour = Colour { r: 255, g: 255, b: 255, a: 255 };
-    pub const BLACK: Colour = Colour { r: 0, g: 0, b: 0, a: 255 };
-    pub const TRANSPARENT: Colour = Colour { r: 0, g: 0, b: 0, a: 0 };
-    pub const RED: Colour = Colour { r: 255, g: 0, b: 0, a: 255 };
-    pub const GREEN: Colour = Colour { r: 0, g: 255, b: 0, a: 255 };
-    pub const BLUE: Colour = Colour { r: 0, g: 0, b: 255, a: 255 };
+    pub const WHITE: Colour = Colour {
+        r: 255,
+        g: 255,
+        b: 255,
+        a: 255,
+    };
+    pub const BLACK: Colour = Colour {
+        r: 0,
+        g: 0,
+        b: 0,
+        a: 255,
+    };
+    pub const TRANSPARENT: Colour = Colour {
+        r: 0,
+        g: 0,
+        b: 0,
+        a: 0,
+    };
+    pub const RED: Colour = Colour {
+        r: 255,
+        g: 0,
+        b: 0,
+        a: 255,
+    };
+    pub const GREEN: Colour = Colour {
+        r: 0,
+        g: 255,
+        b: 0,
+        a: 255,
+    };
+    pub const BLUE: Colour = Colour {
+        r: 0,
+        g: 0,
+        b: 255,
+        a: 255,
+    };
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -33,23 +63,48 @@ pub struct Padding {
 
 impl Padding {
     pub fn new(top: f32, bottom: f32, left: f32, right: f32) -> Self {
-        Self { top, bottom, left, right }
+        Self {
+            top,
+            bottom,
+            left,
+            right,
+        }
     }
 
     pub fn all(num: f32) -> Self {
-        Self { top: num, bottom: num, left: num, right: num }
+        Self {
+            top: num,
+            bottom: num,
+            left: num,
+            right: num,
+        }
     }
 
     pub fn ver(num: f32) -> Self {
-        Self { top: num, bottom: num, left: 0.0, right: 0.0 }
+        Self {
+            top: num,
+            bottom: num,
+            left: 0.0,
+            right: 0.0,
+        }
     }
 
     pub fn hor(num: f32) -> Self {
-        Self { top: 0.0, bottom: 0.0, left: num, right: num }
+        Self {
+            top: 0.0,
+            bottom: 0.0,
+            left: num,
+            right: num,
+        }
     }
 
     pub fn zero() -> Self {
-        Self { top: 0.0, bottom: 0.0, left: 0.0, right: 0.0 }
+        Self {
+            top: 0.0,
+            bottom: 0.0,
+            left: 0.0,
+            right: 0.0,
+        }
     }
 }
 
@@ -63,23 +118,48 @@ pub struct Margins {
 
 impl Margins {
     pub fn new(top: f32, bottom: f32, left: f32, right: f32) -> Self {
-        Self { top, bottom, left, right }
+        Self {
+            top,
+            bottom,
+            left,
+            right,
+        }
     }
 
     pub fn all(num: f32) -> Self {
-        Self { top: num, bottom: num, left: num, right: num }
+        Self {
+            top: num,
+            bottom: num,
+            left: num,
+            right: num,
+        }
     }
 
     pub fn ver(num: f32) -> Self {
-        Self { top: num, bottom: num, left: 0.0, right: 0.0 }
+        Self {
+            top: num,
+            bottom: num,
+            left: 0.0,
+            right: 0.0,
+        }
     }
 
     pub fn hor(num: f32) -> Self {
-        Self { top: 0.0, bottom: 0.0, left: num, right: num }
+        Self {
+            top: 0.0,
+            bottom: 0.0,
+            left: num,
+            right: num,
+        }
     }
 
     pub fn zero() -> Self {
-        Self { top: 0.0, bottom: 0.0, left: 0.0, right: 0.0 }
+        Self {
+            top: 0.0,
+            bottom: 0.0,
+            left: 0.0,
+            right: 0.0,
+        }
     }
 }
 
@@ -107,7 +187,6 @@ impl Spacing {
             padding: Padding::zero(),
         }
     }
-
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -119,18 +198,26 @@ pub struct Borders {
 
 impl Borders {
     pub fn new(width: f32, colour: Colour, radius: f32) -> Self {
-        Self { width, colour, radius }
+        Self {
+            width,
+            colour,
+            radius,
+        }
     }
 
     pub fn none() -> Self {
-        Self { width: 0.0, colour: Colour::TRANSPARENT, radius: 0.0 }
+        Self {
+            width: 0.0,
+            colour: Colour::TRANSPARENT,
+            radius: 0.0,
+        }
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Position {
-    Absolute {x: f32, y: f32},
-    Relative {x: f32, y: f32},
+    Absolute { x: f32, y: f32 },
+    Relative { x: f32, y: f32 },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -154,7 +241,7 @@ impl Size {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Alignment {
     Start,
-    Center, 
+    Center,
     End,
     Stretch,
 }

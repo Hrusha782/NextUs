@@ -1,5 +1,5 @@
-use crate::style::Style;
 use crate::properties::Properties;
+use crate::style::Style;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum ButtonVariant {

@@ -1,4 +1,4 @@
-use crate::style::{Size, Padding, Margins, Colour, Borders};
+use crate::style::{Borders, Colour, Margins, Padding, Size};
 use crate::Element;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -11,7 +11,7 @@ pub struct Part {
     pub background_colour: Option<Colour>,
     pub borders: Borders,
     pub resizable: bool,
-    pub direction: String,  // "horizontal" | "vertical" — axis along which this Part is resizable
+    pub direction: String, // "horizontal" | "vertical" — axis along which this Part is resizable
     pub min_width: Option<f32>,
     pub max_width: Option<f32>,
     pub min_height: Option<f32>,
@@ -23,23 +23,23 @@ pub struct TabItem {
     pub label: String,
     pub icon: Option<Element>,
     pub content: Element,
-    pub closable: bool,             
+    pub closable: bool,
     pub disabled: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Tab {
     pub tabs: Vec<TabItem>,
-    pub active_index: usize,        
+    pub active_index: usize,
     pub width: Size,
     pub height: Size,
     pub padding: Padding,
-    pub tab_bar_height: f32,       
+    pub tab_bar_height: f32,
     pub tab_bar_position: TabBarPosition,
     pub tab_bar_background: Option<Colour>,
     pub active_tab_colour: Option<Colour>,
     pub inactive_tab_colour: Option<Colour>,
-    pub spacing: f32,               
+    pub spacing: f32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -109,12 +109,12 @@ pub struct Modal {
     pub borders: Borders,
     pub overlay_colour: Colour,
     pub blur_background: bool,
-    pub centered: bool,            
-    pub position: Option<(f32, f32)>, 
-    pub closable: bool,             
+    pub centered: bool,
+    pub position: Option<(f32, f32)>,
+    pub closable: bool,
     pub dismiss_on_click_outside: bool,
     pub dismiss_on_escape: bool,
-    pub animate: bool,              
+    pub animate: bool,
 }
 
 impl Default for TabBarPosition {

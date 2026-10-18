@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use crate::ast::Expr;
+use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
@@ -10,7 +10,10 @@ pub enum Value {
     List(Vec<Value>),
     Object(HashMap<String, Value>),
     Element(crate::Element),
-    Lambda { params: Vec<String>, body: Box<Expr> },
+    Lambda {
+        params: Vec<String>,
+        body: Box<Expr>,
+    },
 }
 
 /// Deterministic text form of a number: whole values render without a
@@ -182,7 +185,8 @@ impl StateHistory {
     pub fn push(&mut self, state: State, timestamp: u64, message: Option<crate::message::Message>) {
         self.snapshots.truncate(self.current_index + 1);
 
-        self.snapshots.push(StateSnapshot::new(state, timestamp, message));
+        self.snapshots
+            .push(StateSnapshot::new(state, timestamp, message));
 
         if self.snapshots.len() > self.max_history {
             self.snapshots.remove(0);

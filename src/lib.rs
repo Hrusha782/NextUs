@@ -1,37 +1,47 @@
-pub mod style;
-pub mod properties;
-pub mod element;
-pub mod message;
-pub mod state;
 pub mod ast;
-pub mod runtime;
-pub mod limits;
-pub mod validator;
+pub mod element;
 pub mod error;
+pub mod limits;
+pub mod message;
 pub mod parser;
+pub mod properties;
 pub mod renderer;
+pub mod runtime;
+pub mod state;
+pub mod style;
+pub mod validator;
 pub mod primitives {
-    pub mod layout;
     pub mod containers;
-    pub mod messenger;
     pub mod content;
     pub mod input;
+    pub mod layout;
+    pub mod messenger;
     pub mod scrolling;
 }
 
 #[cfg(test)]
 mod tests;
-pub use element::Element;
-pub use style::{Style, Size, Padding, Margins, Colour, Borders, Alignment};
-pub use message::Message;
-pub use state::{State, Value, StateHistory};
 pub use ast::Program;
-pub use runtime::{Runtime, RuntimeError};
+pub use element::Element;
 pub use limits::{RuntimeLimits, ValidationError};
-pub use primitives::layout::{Container, Row, Column, Stack, Grid, Spacer, Divider, Direction, Orientation};
-pub use primitives::scrolling::{Scroll, List, MessageList, ScrollBar, MessageItem, ScrollDirection, ScrollBarVisibility, ListOrientation};
-pub use primitives::containers::{Part, Tab, Panel, Popover, Modal, TabItem, TabBarPosition, PopoverPosition};
-pub use primitives::messenger::{MessageBubble, Reaction, Reply, Attachment, TypingIndicator, SearchBar, MessageBubbleType, ReactionItem, AttachmentType, TypingUser, SearchScope, Filters};
-pub use primitives::content::{Text, Image, Avatar, Badge, Tooltip, Status, Timestamp};
-pub use primitives::input::{Input, Button, Checkbox, Dropdown};
+pub use message::Message;
+pub use primitives::containers::{
+    Modal, Panel, Part, Popover, PopoverPosition, Tab, TabBarPosition, TabItem,
+};
+pub use primitives::content::{Avatar, Badge, Image, Status, Text, Timestamp, Tooltip};
+pub use primitives::input::{Button, Checkbox, Dropdown, Input};
+pub use primitives::layout::{
+    Column, Container, Direction, Divider, Grid, Orientation, Row, Spacer, Stack,
+};
+pub use primitives::messenger::{
+    Attachment, AttachmentType, Filters, MessageBubble, MessageBubbleType, Reaction, ReactionItem,
+    Reply, SearchBar, SearchScope, TypingIndicator, TypingUser,
+};
+pub use primitives::scrolling::{
+    List, ListOrientation, MessageItem, MessageList, Scroll, ScrollBar, ScrollBarVisibility,
+    ScrollDirection,
+};
+pub use runtime::{Runtime, RuntimeError};
+pub use state::{State, StateHistory, Value};
+pub use style::{Alignment, Borders, Colour, Margins, Padding, Size, Style};
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

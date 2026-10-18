@@ -1,14 +1,14 @@
 //! Renderer module for NextUs
-//! 
+//!
 //! Provides layout computation and memory tracking for UI elements.
 
 mod layout_engine;
 mod memory_tracker;
 
-pub use layout_engine::{LayoutEngine, LayoutNode, LayoutResult, ComputedLayout};
-pub use memory_tracker::{MemoryTracker, MemoryStats, AllocationInfo};
+pub use layout_engine::{ComputedLayout, LayoutEngine, LayoutNode, LayoutResult};
+pub use memory_tracker::{AllocationInfo, MemoryStats, MemoryTracker};
 
-use crate::style::{Size, Padding, Margins};
+use crate::style::{Margins, Padding, Size};
 
 /// Represents a computed position and size for an element
 #[derive(Debug, Clone, PartialEq)]
@@ -21,23 +21,35 @@ pub struct Rect {
 
 impl Rect {
     pub fn new(x: f32, y: f32, width: f32, height: f32) -> Self {
-        Self { x, y, width, height }
+        Self {
+            x,
+            y,
+            width,
+            height,
+        }
     }
 
     pub fn zero() -> Self {
-        Self { x: 0.0, y: 0.0, width: 0.0, height: 0.0 }
+        Self {
+            x: 0.0,
+            y: 0.0,
+            width: 0.0,
+            height: 0.0,
+        }
     }
 
     pub fn contains(&self, point_x: f32, point_y: f32) -> bool {
-        point_x >= self.x && point_x <= self.x + self.width &&
-        point_y >= self.y && point_y <= self.y + self.height
+        point_x >= self.x
+            && point_x <= self.x + self.width
+            && point_y >= self.y
+            && point_y <= self.y + self.height
     }
 
     pub fn intersects(&self, other: &Rect) -> bool {
-        self.x < other.x + other.width &&
-        self.x + self.width > other.x &&
-        self.y < other.y + other.height &&
-        self.y + self.height > other.y
+        self.x < other.x + other.width
+            && self.x + self.width > other.x
+            && self.y < other.y + other.height
+            && self.y + self.height > other.y
     }
 }
 
@@ -52,7 +64,12 @@ pub struct Constraints {
 
 impl Constraints {
     pub fn new(min_width: f32, max_width: f32, min_height: f32, max_height: f32) -> Self {
-        Self { min_width, max_width, min_height, max_height }
+        Self {
+            min_width,
+            max_width,
+            min_height,
+            max_height,
+        }
     }
 
     pub fn unbounded() -> Self {

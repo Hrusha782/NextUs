@@ -1,17 +1,17 @@
-use std::fs;
+use nextus::{parser, Element, Runtime, RuntimeLimits};
 use std::env;
-use nextus::{parser, Runtime, RuntimeLimits, Element};
+use std::fs;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    
+
     if args.len() < 2 {
         print_usage();
         std::process::exit(1);
     }
 
     let command = &args[1];
-    
+
     match command.as_str() {
         "--help" | "-h" => {
             print_usage();
@@ -60,13 +60,11 @@ fn print_usage() {
 fn load_and_parse(file_path: &str) -> Result<nextus::Program, String> {
     let source = fs::read_to_string(file_path)
         .map_err(|e| format!("Failed to read '{}': {}", file_path, e))?;
-    
-    let program = parser::parse(&source)
-        .map_err(|e| format!("Parse error: {}", e))?;
-    
-    parser::syntax::validate_program(&program)
-        .map_err(|e| format!("Validation error: {}", e))?;
-    
+
+    let program = parser::parse(&source).map_err(|e| format!("Parse error: {}", e))?;
+
+    parser::syntax::validate_program(&program).map_err(|e| format!("Validation error: {}", e))?;
+
     Ok(program)
 }
 
@@ -88,16 +86,23 @@ fn run_ast(file_path: &str) {
     match load_and_parse(file_path) {
         Ok(program) => {
             println!("=== AST for {} ===\n", file_path);
-            
+
             println!("STATE:");
             for var in &program.state {
-                println!("  {} = {}", var.name, parser::syntax::format_expr(&var.initial_value));
+                println!(
+                    "  {} = {}",
+                    var.name,
+                    parser::syntax::format_expr(&var.initial_value)
+                );
             }
-            
+
             println!("\nVIEW:");
             println!("  params: {:?}", program.view.params);
-            println!("  body: {}", parser::syntax::format_expr(&program.view.body));
-            
+            println!(
+                "  body: {}",
+                parser::syntax::format_expr(&program.view.body)
+            );
+
             println!("\nUPDATE RULES:");
             for (i, rule) in program.update.iter().enumerate() {
                 println!("  {}. when {:?}", i + 1, rule.pattern);
@@ -121,9 +126,9 @@ fn run_program(file_path: &str) {
             std::process::exit(1);
         }
     };
-    
+
     println!("✓ Loaded {}", file_path);
-    
+
     let limits = RuntimeLimits::default();
     let runtime = match Runtime::new(program, limits) {
         Ok(r) => r,
@@ -132,15 +137,15 @@ fn run_program(file_path: &str) {
             std::process::exit(1);
         }
     };
-    
+
     println!("✓ Runtime initialized");
     println!("  State: {} variables", runtime.state().variables().len());
     for (name, value) in runtime.state().variables() {
         println!("    {} = {:?}", name, value);
     }
-    
+
     println!("\n--- Rendering View ---\n");
-    
+
     match runtime.render() {
         Ok(element) => {
             print_element(&element, 0);
@@ -154,7 +159,7 @@ fn run_program(file_path: &str) {
 
 fn print_element(element: &Element, indent: usize) {
     let pad = "  ".repeat(indent);
-    
+
     match element {
         Element::Text(t) => {
             println!("{}Text \"{}\"", pad, t.content);

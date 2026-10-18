@@ -1,12 +1,12 @@
 //! Layout Engine for NextUs
-//! 
+//!
 //! Computes layout positions and sizes for UI elements.
 
-use std::collections::HashMap;
-use crate::Element;
-use crate::style::{Size, Padding, Alignment};
+use super::{resolve_size, Constraints, Rect};
 use crate::primitives::scrolling::ScrollDirection;
-use super::{Rect, Constraints, resolve_size};
+use crate::style::{Alignment, Padding, Size};
+use crate::Element;
+use std::collections::HashMap;
 
 /// Represents a node in the layout tree
 #[derive(Debug, Clone)]
@@ -118,7 +118,13 @@ impl LayoutEngine {
         format!("element_{}", self.element_counter)
     }
 
-    fn layout_element(&mut self, element: &Element, constraints: &Constraints, x: f32, y: f32) -> LayoutNode {
+    fn layout_element(
+        &mut self,
+        element: &Element,
+        constraints: &Constraints,
+        x: f32,
+        y: f32,
+    ) -> LayoutNode {
         let id = self.generate_id();
         let mut node = LayoutNode::new(id.clone());
 
@@ -129,7 +135,7 @@ impl LayoutEngine {
                 let line_height = 16.0;
                 let text_width = text.content.len() as f32 * char_width;
                 let text_height = line_height;
-                
+
                 let (width, height) = constraints.constrain(text_width, text_height);
                 node.rect = Rect::new(x, y, width, height);
                 self.store_layout(&id, x, y, width, height, &Padding::zero());
@@ -145,7 +151,8 @@ impl LayoutEngine {
                     row.spacing,
                     row.alignment,
                     constraints,
-                    x, y,
+                    x,
+                    y,
                 );
                 node.rect = Rect::new(x, y, width, height);
                 self.store_layout(&id, x, y, width, height, &row.padding);
@@ -161,7 +168,8 @@ impl LayoutEngine {
                     col.spacing,
                     col.alignment,
                     constraints,
-                    x, y,
+                    x,
+                    y,
                 );
                 node.rect = Rect::new(x, y, width, height);
                 self.store_layout(&id, x, y, width, height, &col.padding);
@@ -169,14 +177,19 @@ impl LayoutEngine {
 
             Element::Stack(stack) => {
                 let padding = &stack.padding;
-                
-                let available_width = resolve_size(&stack.width, constraints.max_width, constraints)
-                    - padding.left - padding.right;
-                let available_height = resolve_size(&stack.height, constraints.max_height, constraints)
-                    - padding.top - padding.bottom;
 
-                let child_constraints = Constraints::new(0.0, available_width, 0.0, available_height);
-                
+                let available_width =
+                    resolve_size(&stack.width, constraints.max_width, constraints)
+                        - padding.left
+                        - padding.right;
+                let available_height =
+                    resolve_size(&stack.height, constraints.max_height, constraints)
+                        - padding.top
+                        - padding.bottom;
+
+                let child_constraints =
+                    Constraints::new(0.0, available_width, 0.0, available_height);
+
                 let content_x = x + padding.left;
                 let content_y = y + padding.top;
 
@@ -184,7 +197,8 @@ impl LayoutEngine {
                 let mut max_height: f32 = 0.0;
 
                 for child in &stack.children {
-                    let child_node = self.layout_element(child, &child_constraints, content_x, content_y);
+                    let child_node =
+                        self.layout_element(child, &child_constraints, content_x, content_y);
                     max_width = max_width.max(child_node.rect.width);
                     max_height = max_height.max(child_node.rect.height);
                     node.add_child(child_node);
@@ -203,7 +217,7 @@ impl LayoutEngine {
                 let char_width = 8.0;
                 let line_height = 16.0;
                 let text_width = button.text.len() as f32 * char_width;
-                
+
                 let width = text_width + 20.0; // Add some default padding
                 let height = line_height + 10.0;
 
@@ -234,17 +248,15 @@ impl LayoutEngine {
                         0.0,
                         height - padding.top - padding.bottom,
                     ),
-                    ScrollDirection::Both => Constraints::new(
-                        0.0,
-                        f32::INFINITY,
-                        0.0,
-                        f32::INFINITY,
-                    ),
+                    ScrollDirection::Both => {
+                        Constraints::new(0.0, f32::INFINITY, 0.0, f32::INFINITY)
+                    }
                 };
 
                 let content_x = x + padding.left;
                 let content_y = y + padding.top;
-                let child_node = self.layout_element(&scroll.child, &content_constraints, content_x, content_y);
+                let child_node =
+                    self.layout_element(&scroll.child, &content_constraints, content_x, content_y);
                 node.add_child(child_node);
 
                 node.rect = Rect::new(x, y, width, height);
@@ -295,7 +307,7 @@ impl LayoutEngine {
         for child in children {
             let child_node = self.layout_element(child, &child_constraints, current_x, content_y);
             let child_height = child_node.rect.height;
-            
+
             // Apply cross-axis alignment
             let aligned_y = match alignment {
                 Alignment::Start => content_y,
@@ -303,10 +315,10 @@ impl LayoutEngine {
                 Alignment::End => content_y + available_height - child_height,
                 Alignment::Stretch => content_y,
             };
-            
+
             let mut aligned_node = child_node;
             aligned_node.rect.y = aligned_y;
-            
+
             current_x += aligned_node.rect.width + spacing;
             node.add_child(aligned_node);
         }
@@ -346,7 +358,7 @@ impl LayoutEngine {
         for child in children {
             let child_node = self.layout_element(child, &child_constraints, content_x, current_y);
             let child_width = child_node.rect.width;
-            
+
             // Apply cross-axis alignment
             let aligned_x = match alignment {
                 Alignment::Start => content_x,
@@ -354,10 +366,10 @@ impl LayoutEngine {
                 Alignment::End => content_x + available_width - child_width,
                 Alignment::Stretch => content_x,
             };
-            
+
             let mut aligned_node = child_node;
             aligned_node.rect.x = aligned_x;
-            
+
             current_y += aligned_node.rect.height + spacing;
             node.add_child(aligned_node);
         }
@@ -365,7 +377,15 @@ impl LayoutEngine {
         (width, height)
     }
 
-    fn store_layout(&mut self, id: &str, x: f32, y: f32, width: f32, height: f32, padding: &Padding) {
+    fn store_layout(
+        &mut self,
+        id: &str,
+        x: f32,
+        y: f32,
+        width: f32,
+        height: f32,
+        padding: &Padding,
+    ) {
         let layout = ComputedLayout {
             position: (x, y),
             size: (width, height),

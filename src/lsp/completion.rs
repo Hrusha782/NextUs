@@ -1,30 +1,36 @@
 //! Auto-completion provider
 
+use crate::capabilities::{get_element_info, ELEMENT_INFO};
 use tower_lsp::lsp_types::*;
-use crate::capabilities::{ELEMENT_INFO, get_element_info};
 
 /// Get completions at the given position
 pub fn get_completions(text: &str, position: Position) -> Vec<CompletionItem> {
     let lines: Vec<&str> = text.lines().collect();
     let line_idx = position.line as usize;
-    
+
     if line_idx >= lines.len() {
         return vec![];
     }
-    
+
     let line = lines[line_idx];
     let col = position.character as usize;
-    let prefix = if col <= line.len() { &line[..col] } else { line };
-    
+    let prefix = if col <= line.len() {
+        &line[..col]
+    } else {
+        line
+    };
+
     // Determine context
     let context = determine_context(text, line_idx, prefix);
-    
+
     match context {
         CompletionContext::TopLevel => top_level_completions(),
         CompletionContext::InsideState => state_completions(),
         CompletionContext::InsideView => element_completions(prefix),
         CompletionContext::InsideUpdate => update_completions(),
-        CompletionContext::InsideElement(element_name) => property_completions(&element_name, prefix),
+        CompletionContext::InsideElement(element_name) => {
+            property_completions(&element_name, prefix)
+        }
         CompletionContext::PropertyValue(prop_name) => value_completions(&prop_name),
         CompletionContext::Unknown => element_completions(prefix),
     }
@@ -43,10 +49,12 @@ enum CompletionContext {
 
 fn determine_context(text: &str, line_idx: usize, prefix: &str) -> CompletionContext {
     let trimmed = prefix.trim();
-    
+
     // Check if we're after a colon (property value)
     if trimmed.ends_with(':') || (trimmed.contains(':') && !trimmed.ends_with('}')) {
-        if let Some(prop_start) = trimmed.rfind(|c: char| c == '{' || c == '\n' || c.is_whitespace()) {
+        if let Some(prop_start) =
+            trimmed.rfind(|c: char| c == '{' || c == '\n' || c.is_whitespace())
+        {
             let after = trimmed[prop_start..].trim();
             if let Some(colon_idx) = after.find(':') {
                 let prop_name = after[..colon_idx].trim();
@@ -54,7 +62,7 @@ fn determine_context(text: &str, line_idx: usize, prefix: &str) -> CompletionCon
             }
         }
     }
-    
+
     // Walk backwards to find context
     let lines: Vec<&str> = text.lines().collect();
     let mut brace_depth = 0;
@@ -62,11 +70,11 @@ fn determine_context(text: &str, line_idx: usize, prefix: &str) -> CompletionCon
     let mut in_view = false;
     let mut in_update = false;
     let mut current_element: Option<String> = None;
-    
+
     for i in (0..=line_idx).rev() {
         let line = if i < lines.len() { lines[i] } else { continue };
         let line_trimmed = line.trim();
-        
+
         // Count braces on this line
         for ch in line.chars() {
             match ch {
@@ -75,7 +83,7 @@ fn determine_context(text: &str, line_idx: usize, prefix: &str) -> CompletionCon
                 _ => {}
             }
         }
-        
+
         // Check for block starts
         if line_trimmed.starts_with("state") && line_trimmed.contains('{') {
             in_state = true;
@@ -89,7 +97,7 @@ fn determine_context(text: &str, line_idx: usize, prefix: &str) -> CompletionCon
             in_update = true;
             break;
         }
-        
+
         // Check for element
         if current_element.is_none() && brace_depth > 0 {
             for elem in ELEMENT_INFO {
@@ -100,7 +108,7 @@ fn determine_context(text: &str, line_idx: usize, prefix: &str) -> CompletionCon
             }
         }
     }
-    
+
     if let Some(elem) = current_element {
         return CompletionContext::InsideElement(elem);
     }
@@ -116,7 +124,7 @@ fn determine_context(text: &str, line_idx: usize, prefix: &str) -> CompletionCon
     if prefix.trim().is_empty() && brace_depth == 0 {
         return CompletionContext::TopLevel;
     }
-    
+
     CompletionContext::Unknown
 }
 
@@ -150,21 +158,19 @@ fn top_level_completions() -> Vec<CompletionItem> {
 }
 
 fn state_completions() -> Vec<CompletionItem> {
-    vec![
-        CompletionItem {
-            label: "variable".to_string(),
-            kind: Some(CompletionItemKind::SNIPPET),
-            detail: Some("Define a state variable".to_string()),
-            insert_text: Some("${1:name}: ${2:value}".to_string()),
-            insert_text_format: Some(InsertTextFormat::SNIPPET),
-            ..Default::default()
-        },
-    ]
+    vec![CompletionItem {
+        label: "variable".to_string(),
+        kind: Some(CompletionItemKind::SNIPPET),
+        detail: Some("Define a state variable".to_string()),
+        insert_text: Some("${1:name}: ${2:value}".to_string()),
+        insert_text_format: Some(InsertTextFormat::SNIPPET),
+        ..Default::default()
+    }]
 }
 
 fn element_completions(prefix: &str) -> Vec<CompletionItem> {
     let prefix_lower = prefix.trim().to_lowercase();
-    
+
     ELEMENT_INFO
         .iter()
         .filter(|e| prefix_lower.is_empty() || e.name.to_lowercase().starts_with(&prefix_lower))
@@ -174,7 +180,7 @@ fn element_completions(prefix: &str) -> Vec<CompletionItem> {
             } else {
                 format!("{} {{ $0 }}", elem.name)
             };
-            
+
             CompletionItem {
                 label: elem.name.to_string(),
                 kind: Some(CompletionItemKind::CLASS),
@@ -201,7 +207,9 @@ fn update_completions() -> Vec<CompletionItem> {
             label: "when InputChanged".to_string(),
             kind: Some(CompletionItemKind::SNIPPET),
             detail: Some("Handle input change event".to_string()),
-            insert_text: Some("when InputChanged { id: \"$1\", value: $2 } => {\n    $0\n}".to_string()),
+            insert_text: Some(
+                "when InputChanged { id: \"$1\", value: $2 } => {\n    $0\n}".to_string(),
+            ),
             insert_text_format: Some(InsertTextFormat::SNIPPET),
             ..Default::default()
         },
@@ -218,7 +226,7 @@ fn update_completions() -> Vec<CompletionItem> {
 
 fn property_completions(element_name: &str, prefix: &str) -> Vec<CompletionItem> {
     let prefix_lower = prefix.trim().to_lowercase();
-    
+
     // Get element-specific properties
     let mut completions: Vec<CompletionItem> = if let Some(elem) = get_element_info(element_name) {
         elem.properties
@@ -231,7 +239,7 @@ fn property_completions(element_name: &str, prefix: &str) -> Vec<CompletionItem>
                     "number" => format!("{}: $1", prop.name),
                     _ => format!("{}: $1", prop.name),
                 };
-                
+
                 CompletionItem {
                     label: prop.name.to_string(),
                     kind: Some(CompletionItemKind::PROPERTY),
@@ -245,7 +253,7 @@ fn property_completions(element_name: &str, prefix: &str) -> Vec<CompletionItem>
     } else {
         vec![]
     };
-    
+
     // Add common properties
     completions.push(CompletionItem {
         label: "id".to_string(),
@@ -255,14 +263,14 @@ fn property_completions(element_name: &str, prefix: &str) -> Vec<CompletionItem>
         insert_text_format: Some(InsertTextFormat::SNIPPET),
         ..Default::default()
     });
-    
+
     // Also suggest child elements for containers
     if let Some(elem) = get_element_info(element_name) {
         if elem.can_have_children {
             completions.extend(element_completions(prefix));
         }
     }
-    
+
     completions
 }
 
@@ -273,10 +281,7 @@ fn value_completions(prop_name: &str) -> Vec<CompletionItem> {
             completion_value("Horizontal"),
             completion_value("Both"),
         ],
-        "orientation" => vec![
-            completion_value("Vertical"),
-            completion_value("Horizontal"),
-        ],
+        "orientation" => vec![completion_value("Vertical"), completion_value("Horizontal")],
         "variant" => vec![
             completion_value("Primary"),
             completion_value("Secondary"),

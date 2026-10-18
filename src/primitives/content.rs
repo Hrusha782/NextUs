@@ -1,8 +1,8 @@
-use crate::style::Style;
 use crate::properties::Properties;
+use crate::style::Style;
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Text { 
+pub struct Text {
     pub properties: Properties,
     pub style: Style,
     pub content: String,
@@ -91,11 +91,11 @@ pub struct Timestamp {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TimestampFormat {
-    ShortTime,        // "14:30"
-    LongTime,         // "14:30:45"
-    ShortDate,        // "Jan 11"
-    LongDate,         // "January 11, 2026"
-    DateTime,         // "Jan 11, 14:30"
-    FullDateTime,     // "January 11, 2026 14:30:45"
-    Relative,         // "2 hours ago", "just now"
+    ShortTime,    // "14:30"
+    LongTime,     // "14:30:45"
+    ShortDate,    // "Jan 11"
+    LongDate,     // "January 11, 2026"
+    DateTime,     // "Jan 11, 14:30"
+    FullDateTime, // "January 11, 2026 14:30:45"
+    Relative,     // "2 hours ago", "just now"
 }

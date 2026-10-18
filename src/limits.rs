@@ -12,7 +12,7 @@ pub struct RuntimeLimits {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum ValidationError { 
+pub enum ValidationError {
     DepthExceeded { current: usize, max: usize },
     TooManyChildren { current: usize, max: usize },
     TextTooLong { current: usize, max: usize },
@@ -27,25 +27,25 @@ pub enum ValidationError {
 impl Default for RuntimeLimits {
     fn default() -> Self {
         Self {
-        max_ui_depth: 50,
-        max_children_per_container: 100,
-        max_text_length: 10_000,
-        max_list_items: 1_000,
-        max_grid_cells: 10_000,
-        max_tabs: 50,
-        max_memory_per_session_mb: 100,
-        max_render_time_ms: 100,
-        max_events_per_second: 100,
+            max_ui_depth: 50,
+            max_children_per_container: 100,
+            max_text_length: 10_000,
+            max_list_items: 1_000,
+            max_grid_cells: 10_000,
+            max_tabs: 50,
+            max_memory_per_session_mb: 100,
+            max_render_time_ms: 100,
+            max_events_per_second: 100,
         }
     }
 }
 
-impl RuntimeLimits { 
+impl RuntimeLimits {
     pub fn validate_depth(&self, depth: usize) -> Result<(), ValidationError> {
         if depth > self.max_ui_depth {
-            return Err(ValidationError::DepthExceeded { 
-                current: depth, 
-                max: self.max_ui_depth 
+            return Err(ValidationError::DepthExceeded {
+                current: depth,
+                max: self.max_ui_depth,
             });
         }
         Ok(())
@@ -53,9 +53,9 @@ impl RuntimeLimits {
 
     pub fn validate_children_count(&self, count: usize) -> Result<(), ValidationError> {
         if count > self.max_children_per_container {
-            return Err(ValidationError::TooManyChildren { 
-                current: count, 
-                max: self.max_children_per_container 
+            return Err(ValidationError::TooManyChildren {
+                current: count,
+                max: self.max_children_per_container,
             });
         }
         Ok(())
@@ -63,9 +63,9 @@ impl RuntimeLimits {
 
     pub fn validate_text_length(&self, length: usize) -> Result<(), ValidationError> {
         if length > self.max_text_length {
-            return Err(ValidationError::TextTooLong { 
-                current: length, 
-                max: self.max_text_length 
+            return Err(ValidationError::TextTooLong {
+                current: length,
+                max: self.max_text_length,
             });
         }
         Ok(())
@@ -73,9 +73,9 @@ impl RuntimeLimits {
 
     pub fn validate_list_items(&self, count: usize) -> Result<(), ValidationError> {
         if count > self.max_list_items {
-            return Err(ValidationError::TooManyListItems { 
-                current: count, 
-                max: self.max_list_items 
+            return Err(ValidationError::TooManyListItems {
+                current: count,
+                max: self.max_list_items,
             });
         }
         Ok(())
@@ -83,9 +83,9 @@ impl RuntimeLimits {
 
     pub fn validate_grid_cells(&self, count: usize) -> Result<(), ValidationError> {
         if count > self.max_grid_cells {
-            return Err(ValidationError::TooManyGridCells { 
-                current: count, 
-                max: self.max_grid_cells 
+            return Err(ValidationError::TooManyGridCells {
+                current: count,
+                max: self.max_grid_cells,
             });
         }
         Ok(())
@@ -93,9 +93,9 @@ impl RuntimeLimits {
 
     pub fn validate_tabs(&self, count: usize) -> Result<(), ValidationError> {
         if count > self.max_tabs {
-            return Err(ValidationError::TooManyTabs { 
-                current: count, 
-                max: self.max_tabs 
+            return Err(ValidationError::TooManyTabs {
+                current: count,
+                max: self.max_tabs,
             });
         }
         Ok(())
@@ -132,7 +132,11 @@ impl fmt::Display for ValidationError {
                 write!(f, "Render timeout: {} ms (max {} ms)", elapsed, max)
             }
             ValidationError::EventRateLimitExceeded { current, max } => {
-                write!(f, "Event rate limit exceeded: {} events/sec (max {})", current, max)
+                write!(
+                    f,
+                    "Event rate limit exceeded: {} events/sec (max {})",
+                    current, max
+                )
             }
         }
     }
